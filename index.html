@@ -934,11 +934,30 @@
       return roundNearestWithFixedSum(exactNow, target);
     }
 
+    function shuffledSteps(stepCount, rightCount) {
+      const steps = Array(stepCount).fill(false);
+      for (let i = 0; i < rightCount; i += 1) steps[i] = true;
+      for (let i = steps.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [steps[i], steps[j]] = [steps[j], steps[i]];
+      }
+      return steps;
+    }
+
+    function routeForValue(value, n) {
+      const grouped = n > SMALL_N_LIMIT;
+      const stepCount = grouped ? 7 : n;
+      const rightCount = grouped
+        ? clamp(Math.round(value / n * stepCount), 0, stepCount)
+        : clamp(value, 0, stepCount);
+      return shuffledSteps(stepCount, rightCount);
+    }
+
     function buildDrops(finalCounts, totalBalls) {
       const drops = [];
       if (totalBalls <= MAX_ANIMATED_DROPS) {
         for (let k = 0; k < finalCounts.length; k += 1) {
-          for (let i = 0; i < finalCounts[k]; i += 1) drops.push({ value: k, weight: 1 });
+          for (let i = 0; i < finalCounts[k]; i += 1) drops.push({ value: k, weight: 1, route: routeForValue(k, finalCounts.length - 1) });
         }
       } else {
         for (let k = 0; k < finalCounts.length; k += 1) {
@@ -950,7 +969,7 @@
           for (let i = 0; i < pieces; i += 1) {
             const weight = base + (rest > 0 ? 1 : 0);
             rest -= rest > 0 ? 1 : 0;
-            if (weight > 0) drops.push({ value: k, weight });
+            if (weight > 0) drops.push({ value: k, weight, route: routeForValue(k, finalCounts.length - 1) });
           }
         }
       }
@@ -1127,13 +1146,27 @@
       ctx.restore();
     }
 
-    function drawBoard(g) {
+    function nailLayout(g) {
       const n = state.params.n;
       const grouped = n > SMALL_N_LIMIT;
       const visibleRows = grouped ? (g.mobile ? 5 : 7) : n;
       const gapY = visibleRows <= 1 ? 0 : (g.nailBottom - g.top) / Math.max(visibleRows - 1, 1);
       const gapX = Math.min(grouped ? 58 : 54, g.boardW / Math.max(visibleRows + 1, 1));
       const nailR = Math.max(3.6, Math.min(6.2, gapX / 8));
+
+      return { grouped, visibleRows, gapX, gapY, nailR };
+    }
+
+    function nailPoint(row, col, layout, g) {
+      return {
+        x: g.centerX + (col - row / 2) * layout.gapX,
+        y: g.top + row * layout.gapY
+      };
+    }
+
+    function drawBoard(g) {
+      const n = state.params.n;
+      const layout = nailLayout(g);
 
       ctx.save();
       ctx.strokeStyle = colors.line;
@@ -1144,16 +1177,15 @@
       ctx.lineTo(g.boardRight - 8, g.nailBottom + 18);
       ctx.stroke();
 
-      for (let row = 0; row < visibleRows; row += 1) {
-        const y = g.top + row * gapY;
+      for (let row = 0; row < layout.visibleRows; row += 1) {
         for (let col = 0; col <= row; col += 1) {
-          const x = g.centerX + (col - row / 2) * gapX;
-          drawNail(x, y, nailR);
+          const { x, y } = nailPoint(row, col, layout, g);
+          drawNail(x, y, layout.nailR);
         }
       }
 
-      if (grouped) {
-        const blockSize = Math.ceil(n / visibleRows);
+      if (layout.grouped) {
+        const blockSize = Math.ceil(n / layout.visibleRows);
         const pillW = Math.min(430, g.graphW - 24);
         const pillX = g.centerX - pillW / 2;
         const pillY = g.nailBottom + 14;
@@ -1164,7 +1196,7 @@
         roundedRect(pillX, pillY, pillW, 36, 18);
         ctx.fill();
         ctx.stroke();
-        drawText(`n=${n} · r≈${blockSize} · ${visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
+        drawText(`n=${n} · r≈${blockSize} · ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
       }
 
       ctx.restore();
@@ -1356,21 +1388,51 @@
       ctx.restore();
     }
 
+    function ballPathPoint(drop, g, targetX, radius) {
+      const layout = nailLayout(g);
+      const route = drop.route && drop.route.length ? drop.route : routeForValue(drop.value, state.params.n);
+      const rows = Math.min(layout.visibleRows, route.length || layout.visibleRows);
+      const points = [{ x: g.centerX, y: g.top - 36 }];
+      let col = 0;
+
+      for (let row = 0; row < rows; row += 1) {
+        const goesRight = Boolean(route[row]);
+        const peg = nailPoint(row, Math.min(col, row), layout, g);
+        const side = goesRight ? -1 : 1;
+        const contactDistance = radius + layout.nailR * 0.92;
+        points.push({
+          x: peg.x + side * contactDistance * 0.72,
+          y: peg.y - contactDistance * 0.70
+        });
+        if (goesRight) col += 1;
+      }
+
+      points.push({ x: targetX, y: g.histBottom - 8 });
+
+      const segmentCount = points.length - 1;
+      const scaled = clamp(drop.progress, 0, 1) * segmentCount;
+      const index = Math.min(segmentCount - 1, Math.floor(scaled));
+      const local = scaled - index;
+      const eased = local * local * (3 - 2 * local);
+      const a = points[index];
+      const b = points[index + 1];
+      const x = a.x + (b.x - a.x) * eased;
+      const segmentDy = Math.max(10, b.y - a.y);
+      const arc = Math.min(24, Math.max(8, segmentDy * 0.22));
+      const bounce = Math.sin(local * Math.PI) * arc;
+      const settle = Math.sin(local * Math.PI * 2) * 2.2 * (1 - drop.progress);
+      const y = a.y + (b.y - a.y) * eased - bounce + settle;
+      return { x, y };
+    }
+
     function drawActiveDrops(g, elapsedScaled) {
       const intervals = state.intervalInfo.intervals;
       for (let i = 0; i < state.activeDrops.length; i += 1) {
         const drop = state.activeDrops[i];
-        const p = drop.progress;
         const index = intervalIndexForValue(drop.value, intervals);
         const targetX = index >= 0 ? xForInterval(index, intervals, g) : xForValue(drop.value, g);
-        const startX = g.centerX;
-        const startY = g.top - 34;
-        const endY = g.histBottom - 8;
-        const ease = p * p * (3 - 2 * p);
-        const wave = Math.sin(p * Math.PI * 6 + i) * (1 - p) * 8;
-        const x = startX + (targetX - startX) * ease + wave;
-        const y = startY + (endY - startY) * ease - Math.sin(p * Math.PI) * 70;
         const radius = clamp(4.8 + Math.log10(drop.weight) * 1.25, 4.8, 10.5);
+        const { x, y } = ballPathPoint(drop, g, targetX, radius);
         drawBall(x, y, radius, i % 7 === 0);
       }
     }
