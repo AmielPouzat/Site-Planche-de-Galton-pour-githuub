@@ -335,6 +335,56 @@
       line-height: 1.45;
     }
 
+    .selected-interval {
+      display: none;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      border-radius: 16px;
+      background: rgba(37, 99, 235, 0.07);
+    }
+
+    .selected-interval.is-visible {
+      display: block;
+    }
+
+    .selected-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-weight: 950;
+    }
+
+    .selected-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .selected-item {
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(102, 112, 133, 0.12);
+    }
+
+    .selected-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .selected-item strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 950;
+    }
+
     .interval-rows {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -349,6 +399,11 @@
       background: rgba(255, 255, 255, 0.62);
       border-radius: 16px;
       padding: 10px;
+      cursor: pointer;
+    }
+
+    .interval-row.is-selected {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
 
     .interval-line {
@@ -561,6 +616,7 @@
         </div>
         <p class="interval-hint" id="intervalHint">bᵢ = observed balls · eᵢ = rounded expected balls</p>
         <div class="interval-legend" id="intervalLegend" aria-label="Relative error by bin"><span id="legendLow">err=0%</span><span class="legend-ramp" aria-hidden="true"></span><span id="legendHigh">err≥100%</span></div>
+        <div class="selected-interval" id="selectedInterval"></div>
         <div class="interval-rows" id="intervalRows"></div>
       </article>
     </section>
@@ -610,6 +666,7 @@
     const intervalLegend = document.getElementById("intervalLegend");
     const legendLow = document.getElementById("legendLow");
     const legendHigh = document.getElementById("legendHigh");
+    const selectedInterval = document.getElementById("selectedInterval");
     const intervalRows = document.getElementById("intervalRows");
 
     const MAX_N = 500;
@@ -1095,7 +1152,11 @@
       const intervalInfo = buildIntervals(params.n, params.intervalSpec);
       const expectedIntervalsExact = aggregateByIntervals(pmf.map(v => v * params.balls), intervalInfo.intervals);
       const expectedIntervals = roundNearestWithFixedSum(expectedIntervalsExact, params.balls);
-      const scaleMax = Math.max(1, ...expectedIntervals, ...aggregateByIntervals(finalCounts, intervalInfo.intervals)) * 1.18;
+      const finalIntervals = aggregateByIntervals(finalCounts, intervalInfo.intervals);
+      const expectedDensities = intervalInfo.intervals.map((interval, i) => expectedIntervals[i] / intervalWidth(interval));
+      const observedDensities = intervalInfo.intervals.map((interval, i) => finalIntervals[i] / intervalWidth(interval));
+      const curveDensities = pmf.map(value => value * params.balls);
+      const scaleMax = Math.max(1, ...expectedDensities, ...observedDensities, ...curveDensities) * 1.18;
 
       state = {
         params,
@@ -1109,7 +1170,9 @@
         drops: params.instant ? [] : buildDrops(finalCounts, params.balls),
         startTime: performance.now(),
         done: params.instant,
-        activeDrops: []
+        activeDrops: [],
+        hoverIntervalIndex: -1,
+        lockedIntervalIndex: -1
       };
 
       updateInfoCards(true);
@@ -1152,12 +1215,40 @@
 
     function xForValue(value, g) {
       const n = state.params.n;
-      if (n === 0) return g.centerX;
-      return g.graphLeft + (value / n) * g.graphW;
+      return g.graphLeft + ((value + 0.5) / (n + 1)) * g.graphW;
+    }
+
+    function xForBoundary(value, g) {
+      const n = state.params.n;
+      return g.graphLeft + (value / (n + 1)) * g.graphW;
+    }
+
+    function intervalWidth(interval) {
+      return Math.max(1, interval.end - interval.start + 1);
+    }
+
+    function intervalRect(interval, g, gap = 1) {
+      const left = xForBoundary(interval.start, g);
+      const right = xForBoundary(interval.end + 1, g);
+      const x = left + gap / 2;
+      const width = Math.max(1, right - left - gap);
+      return { x, width, center: (left + right) / 2 };
+    }
+
+    function usesUnitBins(intervals) {
+      return intervals.length === state.params.n + 1
+        && intervals.every(interval => interval.start === interval.end);
     }
 
     function xForInterval(index, intervals, g) {
-      return g.graphLeft + (index + 0.5) / intervals.length * g.graphW;
+      return intervalRect(intervals[index], g, 0).center;
+    }
+
+    function intervalIndexFromCanvasPoint(x, y, g) {
+      if (!state) return -1;
+      if (y < g.histTop || y > g.histBottom || x < g.graphLeft || x > g.graphRight) return -1;
+      const k = clamp(Math.floor((x - g.graphLeft) / g.graphW * (state.params.n + 1)), 0, state.params.n);
+      return intervalIndexForValue(k, state.intervalInfo.intervals);
     }
 
     function roundedRect(x, y, w, h, r) {
@@ -1355,31 +1446,32 @@
       return `${text.errLabel}=${Math.round(error * 100)}%`;
     }
 
-    function drawHistogramCounts(g, observedIntervals, expectedNowIntervals, count, barW, barGap, base, total) {
+    function drawHistogramCounts(g, intervals, observedIntervals, expectedNowIntervals, count, base, total) {
       const maxLabels = g.mobile ? 24 : 64;
       if (count > maxLabels) {
         drawText("bᵢ/eᵢ", g.centerX, g.histTop + 18, g.mobile ? 10 : 12, colors.muted, 750, "center");
         return;
       }
 
-      const rotated = barW < (g.mobile ? 18 : 20);
-      const size = rotated ? (g.mobile ? 10 : 11) : clamp(barW * 0.42, g.mobile ? 10 : 11, 13);
-
       ctx.save();
-      ctx.font = `850 ${size}px Inter, Segoe UI, Arial, sans-serif`;
       ctx.textBaseline = "middle";
       ctx.lineWidth = 3.5;
       ctx.strokeStyle = "rgba(255,255,255,0.92)";
       ctx.fillStyle = colors.ink;
 
       for (let i = 0; i < count; i += 1) {
+        const rect = intervalRect(intervals[i], g, count > 80 ? 0 : 2);
+        const rotated = rect.width < (g.mobile ? 18 : 20);
+        const size = rotated ? (g.mobile ? 10 : 11) : clamp(rect.width * 0.42, g.mobile ? 10 : 11, 13);
         const value = observedIntervals[i] || 0;
         const expected = expectedNowIntervals[i] || 0;
         const error = intervalRelativeError(value, expected, total);
-        const h = Math.min(g.histHeight, value / state.scaleMax * g.histHeight);
+        const density = value / intervalWidth(intervals[i]);
+        const h = Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
         const label = formatObservedExpected(value, expected, true);
-        const x = g.graphLeft + (i + 0.5) / count * g.graphW;
+        const x = rect.center;
         const y = clamp(base - h - (rotated ? 10 : 13), g.histTop + 12, base - 12);
+        ctx.font = `850 ${size}px Inter, Segoe UI, Arial, sans-serif`;
 
         if (rotated) {
           ctx.save();
@@ -1393,7 +1485,7 @@
         }
 
         const metrics = ctx.measureText(label);
-        const boxW = Math.max(metrics.width + 10, Math.min(28, barW + 10));
+        const boxW = Math.max(metrics.width + 10, Math.min(28, rect.width + 10));
         const boxH = size + 8;
         ctx.fillStyle = "rgba(255,255,255,0.82)";
         ctx.strokeStyle = "rgba(100,116,139,0.18)";
@@ -1416,10 +1508,9 @@
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
       const total = currentTotal();
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
-      const expectedDisplayIntervals = state.expectedIntervals;
       const count = intervals.length;
-      const barGap = count > 80 ? 0 : count > 36 ? 1 : 4;
-      const barW = Math.max(1, g.graphW / count - barGap);
+      const unitBins = usesUnitBins(intervals);
+      const barGap = count > 80 ? 0 : count > 36 ? 1 : 3;
       const base = g.histBottom;
 
       ctx.save();
@@ -1438,52 +1529,68 @@
         const observed = observedIntervals[i] || 0;
         const expectedNow = expectedNowIntervals[i] || 0;
         const error = intervalRelativeError(observed, expectedNow, total);
-        const h = Math.min(g.histHeight, observed / state.scaleMax * g.histHeight);
-        const x = g.graphLeft + i / count * g.graphW + barGap / 2;
+        const rect = intervalRect(intervals[i], g, barGap);
+        const density = unitBins ? observed : observed / intervalWidth(intervals[i]);
+        const h = Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
+        const x = rect.x;
         const y = base - h;
+        const selectedIndex = activeSelectedIntervalIndex();
+        const selected = i === selectedIndex;
         const grad = ctx.createLinearGradient(0, y, 0, base);
         grad.addColorStop(0, colorForError(error, 0.86, 60));
         grad.addColorStop(1, colorForError(error, 0.70, 42));
         ctx.fillStyle = grad;
         ctx.beginPath();
-        roundedRect(x, y, barW, Math.max(1, h), Math.min(8, barW / 2));
+        roundedRect(x, y, rect.width, Math.max(1, h), Math.min(8, rect.width / 2));
         ctx.fill();
+
+        if (selected) {
+          ctx.strokeStyle = colors.blue;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          roundedRect(x - 2, y - 2, rect.width + 4, Math.max(5, h + 4), Math.min(9, rect.width / 2 + 2));
+          ctx.stroke();
+        }
       }
 
       if (curveInput.checked) {
-        const shouldConnect = count > 6;
-        if (shouldConnect) {
-          ctx.strokeStyle = colors.red;
-          ctx.lineWidth = count > 80 ? 2.5 : 3.5;
+        ctx.strokeStyle = colors.red;
+        ctx.lineWidth = state.params.n > 180 ? 2.2 : 3.2;
+        ctx.beginPath();
+        for (let k = 0; k <= state.params.n; k += 1) {
+          const x = xForValue(k, g);
+          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
+          if (k === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = colors.redSoft;
+        const pointStep = Math.max(1, Math.ceil(state.params.n / 120));
+        for (let k = 0; k <= state.params.n; k += pointStep) {
+          const x = xForValue(k, g);
+          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
           ctx.beginPath();
-          for (let i = 0; i < count; i += 1) {
-            const x = xForInterval(i, intervals, g);
-            const y = base - Math.min(g.histHeight, expectedDisplayIntervals[i] / state.scaleMax * g.histHeight);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
+          ctx.arc(x, y, state.params.n > 120 ? 1.7 : 2.5, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        for (let i = 0; i < count; i += 1) {
-          const x = xForInterval(i, intervals, g);
-          const y = base - Math.min(g.histHeight, expectedDisplayIntervals[i] / state.scaleMax * g.histHeight);
-          const tick = Math.min(46, Math.max(14, barW * 0.72));
-          ctx.strokeStyle = colors.red;
-          ctx.lineWidth = count > 80 ? 2 : 3;
-          ctx.beginPath();
-          ctx.moveTo(x - tick / 2, y);
-          ctx.lineTo(x + tick / 2, y);
-          ctx.stroke();
-
-          ctx.fillStyle = colors.redSoft;
-          ctx.beginPath();
-          ctx.arc(x, y, count > 80 ? 1.5 : 2.8, 0, Math.PI * 2);
-          ctx.fill();
+        if (!unitBins) {
+          ctx.strokeStyle = "rgba(239,68,68,0.72)";
+          ctx.lineWidth = 2;
+          for (let i = 0; i < count; i += 1) {
+            const rect = intervalRect(intervals[i], g, barGap);
+            const density = state.expectedIntervals[i] / intervalWidth(intervals[i]);
+            const y = base - Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
+            ctx.beginPath();
+            ctx.moveTo(rect.x, y);
+            ctx.lineTo(rect.x + rect.width, y);
+            ctx.stroke();
+          }
         }
       }
 
-      drawHistogramCounts(g, observedIntervals, expectedNowIntervals, count, barW, barGap, base, total);
+      drawHistogramCounts(g, intervals, observedIntervals, expectedNowIntervals, count, base, total);
 
       ctx.strokeStyle = "rgba(23,32,51,0.7)";
       ctx.lineWidth = 2;
@@ -1594,6 +1701,62 @@
       return `${(value * 100).toFixed(digits)}%`;
     }
 
+    function activeSelectedIntervalIndex() {
+      if (!state) return -1;
+      return state.lockedIntervalIndex >= 0 ? state.lockedIntervalIndex : state.hoverIntervalIndex;
+    }
+
+    function intervalStats(index) {
+      if (!state || index < 0 || index >= state.intervalInfo.intervals.length) return null;
+      const params = state.params;
+      const intervals = state.intervalInfo.intervals;
+      const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
+      const total = currentTotal();
+      const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
+      const interval = intervals[index];
+      const observed = observedIntervals[index] || 0;
+      const expected = expectedNowIntervals[index] || 0;
+      const exact = expectedExactNowIntervals[index] || 0;
+      const error = intervalRelativeError(observed, expected, total);
+      const pct = total > 0 ? observed / total : 0;
+      const q = state.expectedIntervalsExact[index] / params.balls;
+      return {
+        interval,
+        observed,
+        expected,
+        exact,
+        error,
+        pct,
+        q,
+        ratio: formatRatioValue(observed, expected)
+      };
+    }
+
+    function renderSelectedInterval() {
+      const stats = intervalStats(activeSelectedIntervalIndex());
+      if (!stats) {
+        selectedInterval.classList.remove("is-visible");
+        selectedInterval.innerHTML = "";
+        return;
+      }
+
+      selectedInterval.classList.add("is-visible");
+      selectedInterval.innerHTML = `
+        <div class="selected-title">
+          <span>${escapeHTML(text.selectedTitle)} · ${escapeHTML(stats.interval.label)}</span>
+          <span>${formatRelativeError(stats.error)}</span>
+        </div>
+        <div class="selected-grid">
+          <div class="selected-item"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(stats.observed))}</strong></div>
+          <div class="selected-item"><span>eᵢ(t)</span><strong>${formatExpected(stats.expected)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.exactExpectedLabel)}</span><strong>${formatExpected(stats.exact)}</strong></div>
+          <div class="selected-item"><span>bᵢ/eᵢ</span><strong>${stats.ratio}</strong></div>
+          <div class="selected-item"><span>fᵢ(t)</span><strong>${formatPercent(stats.pct, 1)}</strong></div>
+          <div class="selected-item"><span>qᵢ</span><strong>${formatPercent(stats.q, 1)}</strong></div>
+        </div>`;
+    }
+
     function updateInfoCards(force = false) {
       if (!state) return;
       const now = performance.now();
@@ -1634,6 +1797,7 @@
 
       intervalSummary.textContent = state.intervalInfo.summary;
       intervalHint.textContent = `${state.intervalInfo.hint} · ${text.roundedRule} · Σeᵢ=${formatExpected(expectedSum)} · ${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
+      renderSelectedInterval();
 
       const maxCount = Math.max(1, ...observedIntervals, ...expectedNowIntervals);
       intervalRows.innerHTML = intervals.map((interval, i) => {
@@ -1650,8 +1814,9 @@
         const qualitySoft = colorForError(error, 0.11, 52);
         const qualityBorder = colorForError(error, 0.42, 48);
         const title = `${interval.start}–${interval.end}`;
+        const selected = i === activeSelectedIntervalIndex() ? " is-selected" : "";
         return `
-          <div class="interval-row" title="${escapeHTML(title)}" style="border-color:${qualityBorder}; background:linear-gradient(135deg, rgba(255,255,255,0.72), ${qualitySoft});">
+          <div class="interval-row${selected}" data-index="${i}" title="${escapeHTML(title)}" style="border-color:${qualityBorder}; background:linear-gradient(135deg, rgba(255,255,255,0.72), ${qualitySoft});">
             <div class="interval-line">
               <span class="interval-label">${escapeHTML(interval.label)}</span>
               <strong class="interval-count" style="color:${qualityColor}">${formatObservedExpected(count, expectedNow, false)}</strong>
@@ -1709,6 +1874,24 @@
       draw(performance.now());
     }
 
+    function refreshSelection() {
+      draw(performance.now());
+      updateInfoCards(true);
+    }
+
+    function setHoverInterval(index) {
+      if (!state || state.lockedIntervalIndex >= 0 || state.hoverIntervalIndex === index) return;
+      state.hoverIntervalIndex = index;
+      refreshSelection();
+    }
+
+    function toggleLockedInterval(index) {
+      if (!state || index < 0) return;
+      state.lockedIntervalIndex = state.lockedIntervalIndex === index ? -1 : index;
+      state.hoverIntervalIndex = -1;
+      refreshSelection();
+    }
+
     restartButton.addEventListener("click", relaunch);
     rowsInput.addEventListener("change", relaunch);
     probabilityInput.addEventListener("change", relaunch);
@@ -1717,6 +1900,42 @@
     instantInput.addEventListener("change", relaunch);
     curveInput.addEventListener("change", redrawOnly);
     speedInput.addEventListener("input", redrawOnly);
+
+    canvas.addEventListener("mousemove", event => {
+      if (!state) return;
+      const rect = canvas.getBoundingClientRect();
+      const g = geometry();
+      const index = intervalIndexFromCanvasPoint(event.clientX - rect.left, event.clientY - rect.top, g);
+      canvas.style.cursor = index >= 0 ? "pointer" : "default";
+      setHoverInterval(index);
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      canvas.style.cursor = "default";
+      setHoverInterval(-1);
+    });
+
+    canvas.addEventListener("click", event => {
+      if (!state) return;
+      const rect = canvas.getBoundingClientRect();
+      const g = geometry();
+      const index = intervalIndexFromCanvasPoint(event.clientX - rect.left, event.clientY - rect.top, g);
+      toggleLockedInterval(index);
+    });
+
+    intervalRows.addEventListener("mousemove", event => {
+      const row = event.target.closest(".interval-row");
+      if (!row) return;
+      setHoverInterval(Number(row.dataset.index));
+    });
+
+    intervalRows.addEventListener("mouseleave", () => setHoverInterval(-1));
+
+    intervalRows.addEventListener("click", event => {
+      const row = event.target.closest(".interval-row");
+      if (!row) return;
+      toggleLockedInterval(Number(row.dataset.index));
+    });
 
     window.addEventListener("keydown", event => {
       if (event.target instanceof HTMLInputElement && event.key !== "Enter") return;

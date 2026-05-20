@@ -34,6 +34,8 @@ window.GALTON_TRANSLATIONS = {
     customBinsWithGaps: "custom bins + gaps",
     roundedRule: "e_i=round(N(t)q_i)",
     exactExpectedLabel: "exact",
+    selectedTitle: "Selected",
+    selectedHint: "Hover a bar",
     zeroBalls: "0 balls",
     errLabel: "err",
     defaults: {
@@ -78,6 +80,8 @@ window.GALTON_TRANSLATIONS = {
     customBinsWithGaps: "intervalles choisis + compléments",
     roundedRule: "e_i=arrondi(B(t)q_i)",
     exactExpectedLabel: "exact",
+    selectedTitle: "Sélection",
+    selectedHint: "Survoler un rectangle",
     zeroBalls: "0 bille",
     errLabel: "écart",
     defaults: {
