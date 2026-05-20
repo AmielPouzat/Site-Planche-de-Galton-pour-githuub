@@ -874,17 +874,41 @@
 
       if (!intervals.length) return null;
 
-      let hasOther = false;
-      for (let k = 0; k <= n; k += 1) {
-        if (!intervals.some(interval => k >= interval.start && k <= interval.end)) {
-          hasOther = true;
-          break;
+      const sorted = intervals
+        .slice()
+        .sort((a, b) => a.start - b.start || a.end - b.end);
+      const completed = [];
+      let next = 0;
+
+      for (const interval of sorted) {
+        if (interval.start > next) {
+          completed.push({
+            start: next,
+            end: interval.start - 1,
+            label: labelRange(next, interval.start - 1),
+            rest: true,
+            custom: true
+          });
+        }
+
+        const start = Math.max(interval.start, next);
+        if (interval.end >= start) {
+          completed.push({ ...interval, start, label: labelRange(start, interval.end) });
+          next = interval.end + 1;
         }
       }
-      if (hasOther) {
-        intervals.push({ start: 0, end: n, label: "∉I", other: true, custom: true });
+
+      if (next <= n) {
+        completed.push({
+          start: next,
+          end: n,
+          label: labelRange(next, n),
+          rest: true,
+          custom: true
+        });
       }
-      return intervals;
+
+      return completed;
     }
 
     function buildIntervals(n, rawSpec) {
@@ -914,13 +938,13 @@
 
       const custom = parseCustomIntervals(n, compact);
       if (custom) {
-        const hasOther = custom.some(interval => interval.other);
+        const hasRest = custom.some(interval => interval.rest);
         return {
           intervals: custom,
           mode: "custom",
           summary: `m=${custom.length}`,
-          hint: hasOther
-            ? text.customBinsWithRest
+          hint: hasRest
+            ? text.customBinsWithGaps
             : text.customBins
         };
       }
@@ -935,16 +959,11 @@
     }
 
     function intervalIndexForValue(value, intervals) {
-      let otherIndex = -1;
       for (let i = 0; i < intervals.length; i += 1) {
         const interval = intervals[i];
-        if (interval.other) {
-          otherIndex = i;
-          continue;
-        }
         if (value >= interval.start && value <= interval.end) return i;
       }
-      return otherIndex;
+      return -1;
     }
 
     function aggregateByIntervals(values, intervals) {
@@ -1385,7 +1404,6 @@
     function drawHistogram(g) {
       const intervals = state.intervalInfo.intervals;
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
-      const expectedFinal = state.expectedIntervals;
       const total = currentTotal();
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
       const count = intervals.length;
@@ -1422,21 +1440,32 @@
       }
 
       if (curveInput.checked) {
-        ctx.strokeStyle = colors.red;
-        ctx.lineWidth = count > 80 ? 2.5 : 3.5;
-        ctx.beginPath();
-        for (let i = 0; i < count; i += 1) {
-          const x = xForInterval(i, intervals, g);
-          const y = base - Math.min(g.histHeight, expectedFinal[i] / state.scaleMax * g.histHeight);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        const shouldConnect = count > 6;
+        if (shouldConnect) {
+          ctx.strokeStyle = colors.red;
+          ctx.lineWidth = count > 80 ? 2.5 : 3.5;
+          ctx.beginPath();
+          for (let i = 0; i < count; i += 1) {
+            const x = xForInterval(i, intervals, g);
+            const y = base - Math.min(g.histHeight, expectedNowIntervals[i] / state.scaleMax * g.histHeight);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
         }
-        ctx.stroke();
 
-        ctx.fillStyle = colors.redSoft;
         for (let i = 0; i < count; i += 1) {
           const x = xForInterval(i, intervals, g);
-          const y = base - Math.min(g.histHeight, expectedFinal[i] / state.scaleMax * g.histHeight);
+          const y = base - Math.min(g.histHeight, expectedNowIntervals[i] / state.scaleMax * g.histHeight);
+          const tick = Math.min(46, Math.max(14, barW * 0.72));
+          ctx.strokeStyle = colors.red;
+          ctx.lineWidth = count > 80 ? 2 : 3;
+          ctx.beginPath();
+          ctx.moveTo(x - tick / 2, y);
+          ctx.lineTo(x + tick / 2, y);
+          ctx.stroke();
+
+          ctx.fillStyle = colors.redSoft;
           ctx.beginPath();
           ctx.arc(x, y, count > 80 ? 1.5 : 2.8, 0, Math.PI * 2);
           ctx.fill();
@@ -1609,7 +1638,7 @@
         const qualityColor = colorForError(error, 1, 46);
         const qualitySoft = colorForError(error, 0.11, 52);
         const qualityBorder = colorForError(error, 0.42, 48);
-        const title = interval.other ? "∉I" : `${interval.start}–${interval.end}`;
+        const title = `${interval.start}–${interval.end}`;
         return `
           <div class="interval-row" title="${escapeHTML(title)}" style="border-color:${qualityBorder}; background:linear-gradient(135deg, rgba(255,255,255,0.72), ${qualitySoft});">
             <div class="interval-line">
