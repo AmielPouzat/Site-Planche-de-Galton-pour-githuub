@@ -377,7 +377,7 @@
 
     .interval-values {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       margin-bottom: 8px;
     }
@@ -497,26 +497,26 @@
   <main class="app">
     <section class="hero" aria-label="n,p,N,I">
       <div class="title-card">
-        <h1>Galton</h1>
-        <p class="subtitle">X ∼ Bin(n,p), k ∈ {0,…,n}</p>
+        <h1 id="mainTitle">Galton</h1>
+        <p class="subtitle" id="subtitle">X ∼ Bin(n,p), k ∈ {0,…,n}</p>
       </div>
 
       <form class="controls" id="controls" autocomplete="off">
         <button class="primary-button" id="restart" type="button" title="↻">↻</button>
 
-        <label class="field" title="Trials">n
+        <label class="field" id="rowsLabel" title="Trials"><span>n</span>
           <input id="rows" type="number" min="1" max="500" step="1" value="10">
         </label>
 
-        <label class="field" title="Success probability">p
+        <label class="field" id="probabilityLabel" title="Success probability"><span>p</span>
           <input id="probability" type="number" min="0.001" max="0.999" step="0.01" value="0.5">
         </label>
 
-        <label class="field" title="Balls">N
+        <label class="field" id="ballsLabel" title="Balls"><span>N</span>
           <input id="balls" type="number" min="1" max="1000000" step="10" value="120">
         </label>
 
-        <label class="field wide-field" title="Bins: * | 5 | 0-4,5-9,10+">I
+        <label class="field wide-field" id="intervalsLabel" title="Bins: * | 5 | 0-4,5-9,10+"><span>I</span>
           <input id="intervals" type="text" value="*" spellcheck="false" aria-label="I">
         </label>
 
@@ -525,8 +525,8 @@
           <span class="range-value" id="speedValue">1.5</span>
         </label>
 
-        <label class="check-field" title="Expected counts"><input id="curve" type="checkbox" checked> eᵢ</label>
-        <label class="check-field" title="Instant"><input id="instant" type="checkbox"> ⚡</label>
+        <label class="check-field" id="curveLabel" title="Expected counts"><input id="curve" type="checkbox" checked> <span>eᵢ</span></label>
+        <label class="check-field" id="instantLabel" title="Instant"><input id="instant" type="checkbox"> <span>⚡</span></label>
       </form>
     </section>
 
@@ -534,38 +534,39 @@
       <canvas id="scene"></canvas>
     </section>
 
-    <section class="info-grid" aria-label="fit and bins">
+    <section class="info-grid" id="infoGrid" aria-label="fit and bins">
       <article class="stat-card">
-        <h2>Fit</h2>
+        <h2 id="fitTitle">Fit</h2>
         <div class="metric">
-          <div class="metric-top"><span title="Formula: ½Σᵢ|fᵢ(t)−qᵢ|">obs vs exp</span><strong id="errorValue">…</strong></div>
+          <div class="metric-top"><span id="fitLabel" title="Formula: ½Σᵢ|fᵢ(t)−qᵢ|">obs vs exp</span><strong id="errorValue">…</strong></div>
           <div class="bar" aria-hidden="true"><span id="errorFill"></span></div>
         </div>
         <p class="muted" id="errorText">N(t)=0</p>
       </article>
 
       <article class="stat-card">
-        <h2>n,p,N</h2>
+        <h2 id="paramsTitle">n,p,N</h2>
         <div class="facts">
-          <div class="fact"><span>N(t)</span><strong id="progressFact">0/120</strong></div>
-          <div class="fact"><span>μ=np</span><strong id="meanFact">5</strong></div>
-          <div class="fact"><span>σ=√np(1−p)</span><strong id="sigmaFact">1.58</strong></div>
-          <div class="fact"><span>bins</span><strong id="modeFact">*</strong></div>
+          <div class="fact"><span id="progressLabel">N(t)</span><strong id="progressFact">0/120</strong></div>
+          <div class="fact"><span id="meanLabel">μ=np</span><strong id="meanFact">5</strong></div>
+          <div class="fact"><span id="sigmaLabel">σ=√np(1−p)</span><strong id="sigmaFact">1.58</strong></div>
+          <div class="fact"><span id="modeLabel">bins</span><strong id="modeFact">*</strong></div>
         </div>
       </article>
 
       <article class="interval-card">
         <div class="interval-head">
-          <h2>Bins</h2>
+          <h2 id="binsTitle">Bins</h2>
           <div class="interval-summary" id="intervalSummary">I</div>
         </div>
         <p class="interval-hint" id="intervalHint">bᵢ = observed balls · eᵢ = rounded expected balls</p>
-        <div class="interval-legend" aria-label="Relative error by bin"><span>err=0%</span><span class="legend-ramp" aria-hidden="true"></span><span>err≥100%</span></div>
+        <div class="interval-legend" id="intervalLegend" aria-label="Relative error by bin"><span id="legendLow">err=0%</span><span class="legend-ramp" aria-hidden="true"></span><span id="legendHigh">err≥100%</span></div>
         <div class="interval-rows" id="intervalRows"></div>
       </article>
     </section>
   </main>
 
+  <script src="translations.js"></script>
   <script>
     const canvas = document.getElementById("scene");
     const ctx = canvas.getContext("2d");
@@ -580,15 +581,35 @@
     const restartButton = document.getElementById("restart");
 
     const speedValue = document.getElementById("speedValue");
+    const mainTitle = document.getElementById("mainTitle");
+    const subtitle = document.getElementById("subtitle");
+    const rowsLabel = document.getElementById("rowsLabel");
+    const probabilityLabel = document.getElementById("probabilityLabel");
+    const ballsLabel = document.getElementById("ballsLabel");
+    const intervalsLabel = document.getElementById("intervalsLabel");
+    const curveLabel = document.getElementById("curveLabel");
+    const instantLabel = document.getElementById("instantLabel");
+    const infoGrid = document.getElementById("infoGrid");
+    const fitTitle = document.getElementById("fitTitle");
+    const fitLabel = document.getElementById("fitLabel");
     const errorValue = document.getElementById("errorValue");
     const errorFill = document.getElementById("errorFill");
     const errorText = document.getElementById("errorText");
+    const paramsTitle = document.getElementById("paramsTitle");
+    const progressLabel = document.getElementById("progressLabel");
+    const meanLabel = document.getElementById("meanLabel");
+    const sigmaLabel = document.getElementById("sigmaLabel");
+    const modeLabel = document.getElementById("modeLabel");
     const progressFact = document.getElementById("progressFact");
     const meanFact = document.getElementById("meanFact");
     const sigmaFact = document.getElementById("sigmaFact");
     const modeFact = document.getElementById("modeFact");
+    const binsTitle = document.getElementById("binsTitle");
     const intervalSummary = document.getElementById("intervalSummary");
     const intervalHint = document.getElementById("intervalHint");
+    const intervalLegend = document.getElementById("intervalLegend");
+    const legendLow = document.getElementById("legendLow");
+    const legendHigh = document.getElementById("legendHigh");
     const intervalRows = document.getElementById("intervalRows");
 
     const MAX_N = 500;
@@ -617,9 +638,56 @@
       notation: "compact",
       maximumFractionDigits: 1
     });
+    const translations = window.GALTON_TRANSLATIONS || {};
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    const currentLanguage = translations[requestedLanguage] ? requestedLanguage : "en";
+    const text = translations[currentLanguage] || translations.en || {};
     let state = null;
     let animation = null;
     let lastInfoUpdate = 0;
+
+    function setControlLabel(label, value, title) {
+      const span = label.querySelector("span");
+      if (span) span.textContent = value;
+      if (title) label.title = title;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLanguage;
+      document.title = text.pageTitle;
+      mainTitle.textContent = text.mainTitle;
+      subtitle.textContent = text.subtitle;
+
+      setControlLabel(rowsLabel, text.rowsLabel, text.rowsTitle);
+      setControlLabel(probabilityLabel, text.probabilityLabel, text.probabilityTitle);
+      setControlLabel(ballsLabel, text.ballsLabel, text.ballsTitle);
+      setControlLabel(intervalsLabel, text.intervalsLabel, text.intervalsTitle);
+      setControlLabel(curveLabel, "eᵢ", text.curveTitle);
+      setControlLabel(instantLabel, "⚡", text.instantTitle);
+      intervalsInput.setAttribute("aria-label", text.intervalsLabel);
+
+      infoGrid.setAttribute("aria-label", text.infoAria);
+      fitTitle.textContent = text.fitTitle;
+      fitLabel.textContent = text.fitLabel;
+      fitLabel.title = text.fitFormula;
+      paramsTitle.textContent = text.paramsTitle;
+      progressLabel.textContent = text.progressLabel;
+      meanLabel.textContent = text.meanLabel;
+      sigmaLabel.textContent = text.sigmaLabel;
+      modeLabel.textContent = text.modeLabel;
+      binsTitle.textContent = text.binsTitle;
+      intervalHint.textContent = text.intervalHintInitial;
+      intervalLegend.setAttribute("aria-label", text.legendAria);
+      legendLow.textContent = text.legendLow;
+      legendHigh.textContent = text.legendHigh;
+
+      if (text.defaults) {
+        rowsInput.value = text.defaults.rows;
+        probabilityInput.value = text.defaults.probability;
+        ballsInput.value = text.defaults.balls;
+        intervalsInput.value = text.defaults.intervals;
+      }
+    }
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
@@ -829,8 +897,8 @@
           mode: "auto",
           summary: `m=${count}`,
           hint: n <= SMALL_N_LIMIT
-            ? `I₁,…,Iₘ cover {0,…,${n}}`
-            : `${AUTO_INTERVALS_LARGE_N} bins`
+            ? `${text.coverPrefix} {0,…,${n}}`
+            : `${AUTO_INTERVALS_LARGE_N} ${text.binsWord}`
         };
       }
 
@@ -840,7 +908,7 @@
           intervals: makeEqualIntervals(n, count),
           mode: "number",
           summary: `m=${count}`,
-          hint: `I₁,…,Iₘ cover {0,…,${n}}`
+          hint: `${text.coverPrefix} {0,…,${n}}`
         };
       }
 
@@ -852,8 +920,8 @@
           mode: "custom",
           summary: `m=${custom.length}`,
           hint: hasOther
-            ? `custom bins + rest`
-            : `custom bins`
+            ? text.customBinsWithRest
+            : text.customBins
         };
       }
 
@@ -862,7 +930,7 @@
         intervals: makeEqualIntervals(n, fallbackCount),
         mode: "auto",
         summary: `m=${fallbackCount}`,
-        hint: `${fallbackCount} bins`
+        hint: `${fallbackCount} ${text.binsWord}`
       };
     }
 
@@ -1196,7 +1264,7 @@
         roundedRect(pillX, pillY, pillW, 36, 18);
         ctx.fill();
         ctx.stroke();
-        drawText(`n=${n} · r≈${blockSize} · ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
+        drawText(`${text.rowsLabel}=${n} · step≈${blockSize} · ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
       }
 
       ctx.restore();
@@ -1254,8 +1322,8 @@
 
     function formatRelativeError(error) {
       if (error === null) return "…";
-      if (!Number.isFinite(error)) return "err=∞";
-      return `err=${Math.round(error * 100)}%`;
+      if (!Number.isFinite(error)) return `${text.errLabel}=∞`;
+      return `${text.errLabel}=${Math.round(error * 100)}%`;
     }
 
     function drawHistogramCounts(g, observedIntervals, expectedNowIntervals, count, barW, barGap, base, total) {
@@ -1384,7 +1452,7 @@
       ctx.lineTo(g.graphRight, base);
       ctx.stroke();
 
-      drawText("bᵢ/eᵢ · err: 0%→100%", g.centerX, g.height - 14, g.mobile ? 11 : 13, colors.muted, 750, "center");
+      drawText(`bᵢ/eᵢ · ${text.errLabel}: 0%→100%`, g.centerX, g.height - 14, g.mobile ? 11 : 13, colors.muted, 750, "center");
       ctx.restore();
     }
 
@@ -1508,7 +1576,7 @@
         errorValue.textContent = "…";
         errorFill.style.width = "0%";
         errorFill.style.background = "linear-gradient(90deg, var(--blue2), var(--blue))";
-        errorText.textContent = "0 balls";
+        errorText.textContent = text.zeroBalls;
       } else {
         errorValue.textContent = formatPercent(distance, 2);
         errorFill.style.width = `${Math.min(100, distance * 100).toFixed(2)}%`;
@@ -1517,19 +1585,21 @@
           : distance > 0.18
             ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
             : "linear-gradient(90deg, #38bdf8, #2563eb)";
-        errorText.textContent = `N(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)} · err=${formatPercent(distance, 2)}`;
+        errorText.textContent = `${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)} · ${text.errLabel}=${formatPercent(distance, 2)}`;
       }
 
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
       const expectedSum = expectedNowIntervals.reduce((sum, value) => sum + value, 0);
 
       intervalSummary.textContent = state.intervalInfo.summary;
-      intervalHint.textContent = `${state.intervalInfo.hint} · eᵢ=round(N(t)qᵢ), adjusted so Σeᵢ=${formatExpected(expectedSum)} · N(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
+      intervalHint.textContent = `${state.intervalInfo.hint} · ${text.roundedRule} · Σeᵢ=${formatExpected(expectedSum)} · ${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
 
       const maxCount = Math.max(1, ...observedIntervals, ...expectedNowIntervals);
       intervalRows.innerHTML = intervals.map((interval, i) => {
         const count = observedIntervals[i] || 0;
         const expectedNow = expectedNowIntervals[i] || 0;
+        const expectedExactNow = expectedExactNowIntervals[i] || 0;
         const error = intervalRelativeError(count, expectedNow, total);
         const pct = total > 0 ? count / total : 0;
         const q = state.expectedIntervalsExact[i] / params.balls;
@@ -1548,6 +1618,7 @@
             </div>
             <div class="interval-values">
               <div class="interval-value expected"><span>eᵢ(t)</span><strong>${formatExpected(expectedNow)}</strong></div>
+              <div class="interval-value expected"><span>${text.exactExpectedLabel}</span><strong>${formatExpected(expectedExactNow)}</strong></div>
               <div class="interval-value observed"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(count))}</strong></div>
             </div>
             <div class="tinybar" aria-hidden="true" title="eᵢ=${formatExpected(expectedNow)}"><span style="width:${expectedWidth.toFixed(2)}%; background:linear-gradient(90deg, rgba(100,116,139,0.20), rgba(100,116,139,0.36));"></span></div>
@@ -1620,6 +1691,7 @@
       draw(performance.now());
     });
 
+    applyLanguage();
     resizeCanvas();
     relaunch();
   </script>
