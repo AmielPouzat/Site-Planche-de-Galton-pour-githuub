@@ -914,13 +914,23 @@
     function buildIntervals(n, rawSpec) {
       const compact = cleanSpec(rawSpec);
 
-      if (!compact || compact === "*" || compact === "auto" || compact === "a") {
+      if (!compact || compact === "*") {
+        const count = n + 1;
+        return {
+          intervals: makeEqualIntervals(n, count),
+          mode: "all",
+          summary: `m=${count}`,
+          hint: `${text.coverPrefix} {0,…,${n}}`
+        };
+      }
+
+      if (compact === "auto" || compact === "a") {
         const count = n <= SMALL_N_LIMIT ? n + 1 : AUTO_INTERVALS_LARGE_N;
         return {
           intervals: makeEqualIntervals(n, count),
           mode: "auto",
           summary: `m=${count}`,
-          hint: n <= SMALL_N_LIMIT
+          hint: count === n + 1
             ? `${text.coverPrefix} {0,…,${n}}`
             : `${AUTO_INTERVALS_LARGE_N} ${text.binsWord}`
         };
@@ -1406,6 +1416,7 @@
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
       const total = currentTotal();
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const expectedDisplayIntervals = state.expectedIntervals;
       const count = intervals.length;
       const barGap = count > 80 ? 0 : count > 36 ? 1 : 4;
       const barW = Math.max(1, g.graphW / count - barGap);
@@ -1447,7 +1458,7 @@
           ctx.beginPath();
           for (let i = 0; i < count; i += 1) {
             const x = xForInterval(i, intervals, g);
-            const y = base - Math.min(g.histHeight, expectedNowIntervals[i] / state.scaleMax * g.histHeight);
+            const y = base - Math.min(g.histHeight, expectedDisplayIntervals[i] / state.scaleMax * g.histHeight);
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
@@ -1456,7 +1467,7 @@
 
         for (let i = 0; i < count; i += 1) {
           const x = xForInterval(i, intervals, g);
-          const y = base - Math.min(g.histHeight, expectedNowIntervals[i] / state.scaleMax * g.histHeight);
+          const y = base - Math.min(g.histHeight, expectedDisplayIntervals[i] / state.scaleMax * g.histHeight);
           const tick = Math.min(46, Math.max(14, barW * 0.72));
           ctx.strokeStyle = colors.red;
           ctx.lineWidth = count > 80 ? 2 : 3;
