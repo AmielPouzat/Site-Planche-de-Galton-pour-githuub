@@ -1,0 +1,1958 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Galton Board — binomial</title>
+  <style>
+    :root {
+      --bg0: #f7fbff;
+      --bg1: #edf4ff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: rgba(120, 139, 170, 0.28);
+      --card: rgba(255, 255, 255, 0.84);
+      --blue: #2563eb;
+      --blue2: #38bdf8;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --green: #10b981;
+      --shadow: 0 22px 60px rgba(31, 45, 76, 0.14);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(56, 189, 248, 0.25), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(99, 102, 241, 0.18), transparent 30%),
+        linear-gradient(135deg, var(--bg0), var(--bg1));
+    }
+
+    button,
+    input { font: inherit; }
+
+    .app {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(240px, 0.86fr) minmax(420px, 1.14fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .title-card,
+    .controls,
+    .board-card,
+    .stat-card,
+    .interval-card {
+      border: 1px solid var(--line);
+      background: var(--card);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .title-card {
+      min-height: 132px;
+      padding: clamp(20px, 3vw, 34px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .title-card::after {
+      content: "";
+      position: absolute;
+      right: -58px;
+      bottom: -62px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(56, 189, 248, 0.08));
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 0.98;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      position: relative;
+      z-index: 1;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.35vw, 18px);
+    }
+
+    .controls {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(82px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field,
+    .check-field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: 0.01em;
+    }
+
+    .field input[type="number"],
+    .field input[type="text"] {
+      width: 100%;
+      height: 42px;
+      border: 1px solid rgba(102, 112, 133, 0.25);
+      border-radius: 14px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.88);
+      outline: none;
+      font-weight: 800;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .field input:focus {
+      border-color: rgba(37, 99, 235, 0.58);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .wide-field { grid-column: span 2; }
+
+    .range-field {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px 10px;
+      align-items: center;
+    }
+
+    .range-field span:first-child {
+      grid-column: 1 / -1;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .range-value {
+      min-width: 34px;
+      color: var(--ink);
+      font-weight: 850;
+      text-align: right;
+    }
+
+    .check-field {
+      min-height: 42px;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      align-content: center;
+      border: 1px solid rgba(102, 112, 133, 0.18);
+      border-radius: 14px;
+      padding: 0 12px;
+      background: rgba(255, 255, 255, 0.62);
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--blue);
+    }
+
+    .primary-button {
+      height: 42px;
+      border: 0;
+      border-radius: 14px;
+      color: white;
+      background: linear-gradient(135deg, #172033, #334155);
+      box-shadow: 0 12px 28px rgba(23, 32, 51, 0.22);
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #111827, #1f2937);
+    }
+
+    .board-card {
+      overflow: hidden;
+      padding: 10px;
+      margin-bottom: 18px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: clamp(430px, 58vh, 680px);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.92));
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(280px, 1.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stat-card,
+    .interval-card {
+      padding: 18px;
+    }
+
+    .stat-card h2,
+    .interval-card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .metric {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: baseline;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .metric-top strong {
+      color: var(--ink);
+      font-size: 24px;
+      letter-spacing: -0.03em;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(100, 116, 139, 0.15);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue2), var(--blue));
+      transition: width 120ms linear, background 120ms linear;
+    }
+
+    .muted {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .fact {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(102, 112, 133, 0.16);
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: none;
+      letter-spacing: 0.02em;
+    }
+
+    .fact strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .interval-card {
+      grid-column: 1 / -1;
+    }
+
+    .interval-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .interval-summary {
+      color: var(--blue);
+      font-size: 15px;
+      font-weight: 900;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .interval-hint {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .selected-interval {
+      display: none;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      border-radius: 16px;
+      background: rgba(37, 99, 235, 0.07);
+    }
+
+    .selected-interval.is-visible {
+      display: block;
+    }
+
+    .selected-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-weight: 950;
+    }
+
+    .selected-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .selected-item {
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(102, 112, 133, 0.12);
+    }
+
+    .selected-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .selected-item strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 950;
+    }
+
+    .interval-rows {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+      max-height: 440px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .interval-row {
+      border: 1px solid rgba(102, 112, 133, 0.14);
+      background: rgba(255, 255, 255, 0.62);
+      border-radius: 16px;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    .interval-row.is-selected {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+
+    .interval-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .interval-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .interval-count {
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .interval-values {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .interval-value {
+      min-width: 0;
+      padding: 8px 9px;
+      border-radius: 12px;
+      border: 1px solid rgba(102, 112, 133, 0.12);
+      background: rgba(248, 250, 252, 0.74);
+    }
+
+    .interval-value span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: none;
+      letter-spacing: 0.02em;
+    }
+
+    .interval-value strong {
+      display: block;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .interval-value.observed strong { color: var(--blue); }
+    .interval-value.expected strong { color: var(--muted); }
+
+    .interval-ratio {
+      margin-top: 6px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .interval-quality {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-align: right;
+    }
+
+    .tinybar {
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(100, 116, 139, 0.13);
+    }
+
+    .tinybar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue2), var(--blue));
+    }
+
+    .interval-pct {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .interval-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+      margin: -4px 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .legend-ramp {
+      width: 122px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.10);
+    }
+
+    @media (max-width: 980px) {
+      .app { padding: 14px; }
+      .hero { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: repeat(3, minmax(92px, 1fr)); }
+      .info-grid { grid-template-columns: 1fr; }
+      canvas { height: 520px; }
+    }
+
+    @media (max-width: 620px) {
+      .app { padding: 10px; }
+      .title-card, .controls, .board-card, .stat-card, .interval-card { border-radius: 18px; }
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
+      .wide-field { grid-column: 1 / -1; }
+      .primary-button, .check-field { grid-column: span 1; }
+      canvas { height: 430px; border-radius: 14px; }
+      .facts { grid-template-columns: 1fr; }
+      .interval-head { display: grid; }
+      .interval-summary { text-align: left; white-space: normal; }
+      .interval-rows { grid-template-columns: 1fr; max-height: 390px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero" aria-label="n,p,N,I">
+      <div class="title-card">
+        <h1 id="mainTitle">Galton</h1>
+        <p class="subtitle" id="subtitle">X ∼ Bin(n,p), k ∈ {0,…,n}</p>
+      </div>
+
+      <form class="controls" id="controls" autocomplete="off">
+        <button class="primary-button" id="restart" type="button" title="↻">↻</button>
+
+        <label class="field" id="rowsLabel" title="Trials"><span>n</span>
+          <input id="rows" type="number" min="1" max="500" step="1" value="10">
+        </label>
+
+        <label class="field" id="probabilityLabel" title="Success probability"><span>p</span>
+          <input id="probability" type="number" min="0.001" max="0.999" step="0.01" value="0.5">
+        </label>
+
+        <label class="field" id="ballsLabel" title="Balls"><span>N</span>
+          <input id="balls" type="number" min="1" max="1000000" step="10" value="120">
+        </label>
+
+        <label class="field wide-field" id="intervalsLabel" title="Bins: * | 5 | 0-4,5-9,10+"><span>I</span>
+          <input id="intervals" type="text" value="*" spellcheck="false" aria-label="I">
+        </label>
+
+        <label class="field range-field wide-field"><span>v</span>
+          <input id="speed" type="range" min="0.3" max="8" step="0.1" value="1.5">
+          <span class="range-value" id="speedValue">1.5</span>
+        </label>
+
+        <label class="check-field" id="curveLabel" title="Expected counts"><input id="curve" type="checkbox" checked> <span>eᵢ</span></label>
+        <label class="check-field" id="instantLabel" title="Instant"><input id="instant" type="checkbox"> <span>⚡</span></label>
+      </form>
+    </section>
+
+    <section class="board-card" aria-label="Galton">
+      <canvas id="scene"></canvas>
+    </section>
+
+    <section class="info-grid" id="infoGrid" aria-label="fit and bins">
+      <article class="stat-card">
+        <h2 id="fitTitle">Fit</h2>
+        <div class="metric">
+          <div class="metric-top"><span id="fitLabel" title="Formula: ½Σᵢ|fᵢ(t)−qᵢ|">obs vs exp</span><strong id="errorValue">…</strong></div>
+          <div class="bar" aria-hidden="true"><span id="errorFill"></span></div>
+        </div>
+        <p class="muted" id="errorText">N(t)=0</p>
+      </article>
+
+      <article class="stat-card">
+        <h2 id="paramsTitle">n,p,N</h2>
+        <div class="facts">
+          <div class="fact"><span id="progressLabel">N(t)</span><strong id="progressFact">0/120</strong></div>
+          <div class="fact"><span id="meanLabel">μ=np</span><strong id="meanFact">5</strong></div>
+          <div class="fact"><span id="sigmaLabel">σ=√np(1−p)</span><strong id="sigmaFact">1.58</strong></div>
+          <div class="fact"><span id="modeLabel">bins</span><strong id="modeFact">*</strong></div>
+        </div>
+      </article>
+
+      <article class="interval-card">
+        <div class="interval-head">
+          <h2 id="binsTitle">Bins</h2>
+          <div class="interval-summary" id="intervalSummary">I</div>
+        </div>
+        <p class="interval-hint" id="intervalHint">bᵢ = observed balls · eᵢ = rounded expected balls</p>
+        <div class="interval-legend" id="intervalLegend" aria-label="Relative error by bin"><span id="legendLow">err=0%</span><span class="legend-ramp" aria-hidden="true"></span><span id="legendHigh">err≥100%</span></div>
+        <div class="selected-interval" id="selectedInterval"></div>
+        <div class="interval-rows" id="intervalRows"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="translations.js"></script>
+  <script>
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+
+    const rowsInput = document.getElementById("rows");
+    const probabilityInput = document.getElementById("probability");
+    const ballsInput = document.getElementById("balls");
+    const intervalsInput = document.getElementById("intervals");
+    const speedInput = document.getElementById("speed");
+    const curveInput = document.getElementById("curve");
+    const instantInput = document.getElementById("instant");
+    const restartButton = document.getElementById("restart");
+
+    const speedValue = document.getElementById("speedValue");
+    const mainTitle = document.getElementById("mainTitle");
+    const subtitle = document.getElementById("subtitle");
+    const rowsLabel = document.getElementById("rowsLabel");
+    const probabilityLabel = document.getElementById("probabilityLabel");
+    const ballsLabel = document.getElementById("ballsLabel");
+    const intervalsLabel = document.getElementById("intervalsLabel");
+    const curveLabel = document.getElementById("curveLabel");
+    const instantLabel = document.getElementById("instantLabel");
+    const infoGrid = document.getElementById("infoGrid");
+    const fitTitle = document.getElementById("fitTitle");
+    const fitLabel = document.getElementById("fitLabel");
+    const errorValue = document.getElementById("errorValue");
+    const errorFill = document.getElementById("errorFill");
+    const errorText = document.getElementById("errorText");
+    const paramsTitle = document.getElementById("paramsTitle");
+    const progressLabel = document.getElementById("progressLabel");
+    const meanLabel = document.getElementById("meanLabel");
+    const sigmaLabel = document.getElementById("sigmaLabel");
+    const modeLabel = document.getElementById("modeLabel");
+    const progressFact = document.getElementById("progressFact");
+    const meanFact = document.getElementById("meanFact");
+    const sigmaFact = document.getElementById("sigmaFact");
+    const modeFact = document.getElementById("modeFact");
+    const binsTitle = document.getElementById("binsTitle");
+    const intervalSummary = document.getElementById("intervalSummary");
+    const intervalHint = document.getElementById("intervalHint");
+    const intervalLegend = document.getElementById("intervalLegend");
+    const legendLow = document.getElementById("legendLow");
+    const legendHigh = document.getElementById("legendHigh");
+    const selectedInterval = document.getElementById("selectedInterval");
+    const intervalRows = document.getElementById("intervalRows");
+
+    const MAX_N = 500;
+    const MAX_BALLS = 1000000;
+    const SMALL_N_LIMIT = 18;
+    const AUTO_INTERVALS_LARGE_N = 18;
+    const MAX_ANIMATED_DROPS = 1100;
+    const FALL_DURATION = 1.6;
+    const FALL_SPREAD = 4.6;
+
+    const colors = {
+      ink: "#172033",
+      muted: "#667085",
+      line: "rgba(100,116,139,0.24)",
+      blue: "#2563eb",
+      blueSoft: "rgba(37,99,235,0.23)",
+      blue2: "#38bdf8",
+      red: "#ef4444",
+      redSoft: "rgba(239,68,68,0.12)",
+      orange: "#f59e0b",
+      green: "#10b981"
+    };
+
+    const formatNumber = new Intl.NumberFormat(undefined);
+    const formatCompact = new Intl.NumberFormat(undefined, {
+      notation: "compact",
+      maximumFractionDigits: 1
+    });
+    const translations = window.GALTON_TRANSLATIONS || {};
+    const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+    const currentLanguage = translations[requestedLanguage] ? requestedLanguage : "en";
+    const text = translations[currentLanguage] || translations.en || {};
+    let state = null;
+    let animation = null;
+    let lastInfoUpdate = 0;
+
+    function setControlLabel(label, value, title) {
+      const span = label.querySelector("span");
+      if (span) span.textContent = value;
+      if (title) label.title = title;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLanguage;
+      document.title = text.pageTitle;
+      mainTitle.textContent = text.mainTitle;
+      subtitle.textContent = text.subtitle;
+
+      setControlLabel(rowsLabel, text.rowsLabel, text.rowsTitle);
+      setControlLabel(probabilityLabel, text.probabilityLabel, text.probabilityTitle);
+      setControlLabel(ballsLabel, text.ballsLabel, text.ballsTitle);
+      setControlLabel(intervalsLabel, text.intervalsLabel, text.intervalsTitle);
+      setControlLabel(curveLabel, "eᵢ", text.curveTitle);
+      setControlLabel(instantLabel, "⚡", text.instantTitle);
+      intervalsInput.setAttribute("aria-label", text.intervalsLabel);
+
+      infoGrid.setAttribute("aria-label", text.infoAria);
+      fitTitle.textContent = text.fitTitle;
+      fitLabel.textContent = text.fitLabel;
+      fitLabel.title = text.fitFormula;
+      paramsTitle.textContent = text.paramsTitle;
+      progressLabel.textContent = text.progressLabel;
+      meanLabel.textContent = text.meanLabel;
+      sigmaLabel.textContent = text.sigmaLabel;
+      modeLabel.textContent = text.modeLabel;
+      binsTitle.textContent = text.binsTitle;
+      intervalHint.textContent = text.intervalHintInitial;
+      intervalLegend.setAttribute("aria-label", text.legendAria);
+      legendLow.textContent = text.legendLow;
+      legendHigh.textContent = text.legendHigh;
+
+      if (text.defaults) {
+        rowsInput.value = text.defaults.rows;
+        probabilityInput.value = text.defaults.probability;
+        ballsInput.value = text.defaults.balls;
+        intervalsInput.value = text.defaults.intervals;
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function parseInteger(value, min, max, fallback) {
+      const n = Number.parseInt(String(value).replace(/\s/g, ""), 10);
+      if (!Number.isFinite(n)) return fallback;
+      return clamp(n, min, max);
+    }
+
+    function parseProbability(value) {
+      const p = Number.parseFloat(String(value).replace(",", "."));
+      if (!Number.isFinite(p)) return 0.5;
+      return clamp(p, 0.001, 0.999);
+    }
+
+    function readParams() {
+      const n = parseInteger(rowsInput.value, 1, MAX_N, 10);
+      const p = parseProbability(probabilityInput.value);
+      const balls = parseInteger(ballsInput.value, 1, MAX_BALLS, 120);
+      const speed = clamp(Number(speedInput.value) || 1.5, 0.3, 8);
+      const intervalSpec = String(intervalsInput.value || "*").trim() || "*";
+      const instant = instantInput.checked;
+
+      rowsInput.value = n;
+      probabilityInput.value = Number(p.toPrecision(4)).toString();
+      ballsInput.value = balls;
+      intervalsInput.value = intervalSpec;
+      speedValue.textContent = Number(speed.toFixed(1)).toString();
+
+      return { n, p, balls, speed, intervalSpec, instant };
+    }
+
+    function resizeCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function sceneSize() {
+      const rect = canvas.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }
+
+    function logGamma(z) {
+      const coeffs = [
+        676.5203681218851,
+        -1259.1392167224028,
+        771.3234287776531,
+        -176.6150291621406,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.984369578019572e-6,
+        1.5056327351493116e-7
+      ];
+
+      if (z < 0.5) {
+        return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
+      }
+
+      let x = 0.9999999999998099;
+      const tBase = z - 1;
+      for (let i = 0; i < coeffs.length; i += 1) {
+        x += coeffs[i] / (tBase + i + 1);
+      }
+      const t = tBase + coeffs.length - 0.5;
+      return 0.5 * Math.log(2 * Math.PI) + (tBase + 0.5) * Math.log(t) - t + Math.log(x);
+    }
+
+    function binomialPMF(n, p) {
+      const logs = [];
+      let maxLog = -Infinity;
+      for (let k = 0; k <= n; k += 1) {
+        const lp = logGamma(n + 1) - logGamma(k + 1) - logGamma(n - k + 1) + k * Math.log(p) + (n - k) * Math.log(1 - p);
+        logs.push(lp);
+        if (lp > maxLog) maxLog = lp;
+      }
+
+      let sum = 0;
+      const pmf = logs.map(lp => {
+        const v = Math.exp(lp - maxLog);
+        sum += v;
+        return v;
+      });
+      return pmf.map(v => v / sum);
+    }
+
+    function cumulative(values) {
+      const cdf = [];
+      let total = 0;
+      for (const value of values) {
+        total += value;
+        cdf.push(total);
+      }
+      cdf[cdf.length - 1] = 1;
+      return cdf;
+    }
+
+    function sampleCDF(cdf) {
+      const target = Math.random();
+      let low = 0;
+      let high = cdf.length - 1;
+      while (low < high) {
+        const mid = (low + high) >> 1;
+        if (cdf[mid] < target) low = mid + 1;
+        else high = mid;
+      }
+      return low;
+    }
+
+    function makeEqualIntervals(n, count) {
+      const totalValues = n + 1;
+      const wanted = clamp(Math.round(count), 1, totalValues);
+      const intervals = [];
+      for (let i = 0; i < wanted; i += 1) {
+        const start = Math.floor(i * totalValues / wanted);
+        const end = Math.floor((i + 1) * totalValues / wanted) - 1;
+        intervals.push({ start, end, label: labelRange(start, end), automatic: true });
+      }
+      return intervals;
+    }
+
+    function cleanSpec(text) {
+      return String(text || "*")
+        .trim()
+        .toLowerCase()
+        .replace(/[–—]/g, "-")
+        .replace(/\s+/g, "");
+    }
+
+    function labelRange(start, end) {
+      if (start === end) return String(start);
+      return `${start}–${end}`;
+    }
+
+    function parseCustomIntervals(n, compact) {
+      const parts = compact.split(/[;,|]/).filter(Boolean);
+      const intervals = [];
+
+      for (const part of parts) {
+        let match = part.match(/^(\d+)\+$/);
+        if (match) {
+          const start = clamp(Number(match[1]), 0, n);
+          intervals.push({ start, end: n, label: `≥ ${start}`, custom: true });
+          continue;
+        }
+
+        match = part.match(/^>=(\d+)$/);
+        if (match) {
+          const start = clamp(Number(match[1]), 0, n);
+          intervals.push({ start, end: n, label: `≥ ${start}`, custom: true });
+          continue;
+        }
+
+        match = part.match(/^(?:<=|≤)(\d+)$/);
+        if (match) {
+          const end = clamp(Number(match[1]), 0, n);
+          intervals.push({ start: 0, end, label: `≤ ${end}`, custom: true });
+          continue;
+        }
+
+        match = part.match(/^(\d+)-(\d+)$/);
+        if (match) {
+          const a = clamp(Number(match[1]), 0, n);
+          const b = clamp(Number(match[2]), 0, n);
+          const start = Math.min(a, b);
+          const end = Math.max(a, b);
+          intervals.push({ start, end, label: labelRange(start, end), custom: true });
+          continue;
+        }
+
+        match = part.match(/^(\d+)$/);
+        if (match) {
+          const value = clamp(Number(match[1]), 0, n);
+          intervals.push({ start: value, end: value, label: String(value), custom: true });
+          continue;
+        }
+
+        return null;
+      }
+
+      if (!intervals.length) return null;
+
+      const sorted = intervals
+        .slice()
+        .sort((a, b) => a.start - b.start || a.end - b.end);
+      const completed = [];
+      let next = 0;
+
+      for (const interval of sorted) {
+        if (interval.start > next) {
+          completed.push({
+            start: next,
+            end: interval.start - 1,
+            label: labelRange(next, interval.start - 1),
+            rest: true,
+            custom: true
+          });
+        }
+
+        const start = Math.max(interval.start, next);
+        if (interval.end >= start) {
+          completed.push({ ...interval, start, label: labelRange(start, interval.end) });
+          next = interval.end + 1;
+        }
+      }
+
+      if (next <= n) {
+        completed.push({
+          start: next,
+          end: n,
+          label: labelRange(next, n),
+          rest: true,
+          custom: true
+        });
+      }
+
+      return completed;
+    }
+
+    function buildIntervals(n, rawSpec) {
+      const compact = cleanSpec(rawSpec);
+
+      if (!compact || compact === "*") {
+        const count = n + 1;
+        return {
+          intervals: makeEqualIntervals(n, count),
+          mode: "all",
+          summary: `m=${count}`,
+          hint: `${text.coverPrefix} {0,…,${n}}`
+        };
+      }
+
+      if (compact === "auto" || compact === "a") {
+        const count = n <= SMALL_N_LIMIT ? n + 1 : AUTO_INTERVALS_LARGE_N;
+        return {
+          intervals: makeEqualIntervals(n, count),
+          mode: "auto",
+          summary: `m=${count}`,
+          hint: count === n + 1
+            ? `${text.coverPrefix} {0,…,${n}}`
+            : `${AUTO_INTERVALS_LARGE_N} ${text.binsWord}`
+        };
+      }
+
+      if (/^\d+$/.test(compact)) {
+        const count = parseInteger(compact, 1, n + 1, n + 1);
+        return {
+          intervals: makeEqualIntervals(n, count),
+          mode: "number",
+          summary: `m=${count}`,
+          hint: `${text.coverPrefix} {0,…,${n}}`
+        };
+      }
+
+      const custom = parseCustomIntervals(n, compact);
+      if (custom) {
+        const hasRest = custom.some(interval => interval.rest);
+        return {
+          intervals: custom,
+          mode: "custom",
+          summary: `m=${custom.length}`,
+          hint: hasRest
+            ? text.customBinsWithGaps
+            : text.customBins
+        };
+      }
+
+      const fallbackCount = n <= SMALL_N_LIMIT ? n + 1 : AUTO_INTERVALS_LARGE_N;
+      return {
+        intervals: makeEqualIntervals(n, fallbackCount),
+        mode: "auto",
+        summary: `m=${fallbackCount}`,
+        hint: `${fallbackCount} ${text.binsWord}`
+      };
+    }
+
+    function intervalIndexForValue(value, intervals) {
+      for (let i = 0; i < intervals.length; i += 1) {
+        const interval = intervals[i];
+        if (value >= interval.start && value <= interval.end) return i;
+      }
+      return -1;
+    }
+
+    function aggregateByIntervals(values, intervals) {
+      const result = Array(intervals.length).fill(0);
+      for (let k = 0; k < values.length; k += 1) {
+        const index = intervalIndexForValue(k, intervals);
+        if (index >= 0) result[index] += values[k];
+      }
+      return result;
+    }
+
+    function expectedExactForTotal(expectedFinalExact, total) {
+      if (!state || !state.params || state.params.balls <= 0) return 0;
+      return expectedFinalExact * total / state.params.balls;
+    }
+
+    function roundNearestWithFixedSum(values, targetTotal) {
+      const target = Math.max(0, Math.round(Number(targetTotal) || 0));
+      if (!values.length) return [];
+
+      const exact = values.map(value => Math.max(0, Number.isFinite(value) ? value : 0));
+      const rounded = exact.map(value => Math.round(value));
+      let sum = rounded.reduce((acc, value) => acc + value, 0);
+      let diff = target - sum;
+
+      while (diff !== 0) {
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+
+        for (let i = 0; i < rounded.length; i += 1) {
+          if (diff < 0 && rounded[i] <= 0) continue;
+
+          const score = diff > 0
+            ? exact[i] - rounded[i]
+            : rounded[i] - exact[i];
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestIndex = i;
+          }
+        }
+
+        if (bestIndex < 0) break;
+        rounded[bestIndex] += diff > 0 ? 1 : -1;
+        diff += diff > 0 ? -1 : 1;
+      }
+
+      return rounded;
+    }
+
+    function roundedExpectedIntervalsForTotal(total) {
+      if (!state) return [];
+      const target = Math.max(0, Math.round(Number(total) || 0));
+      const exactNow = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, target));
+      return roundNearestWithFixedSum(exactNow, target);
+    }
+
+    function shuffledSteps(stepCount, rightCount) {
+      const steps = Array(stepCount).fill(false);
+      for (let i = 0; i < rightCount; i += 1) steps[i] = true;
+      for (let i = steps.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [steps[i], steps[j]] = [steps[j], steps[i]];
+      }
+      return steps;
+    }
+
+    function routeForValue(value, n) {
+      const grouped = n > SMALL_N_LIMIT;
+      const stepCount = grouped ? 7 : n;
+      const rightCount = grouped
+        ? clamp(Math.round(value / n * stepCount), 0, stepCount)
+        : clamp(value, 0, stepCount);
+      return shuffledSteps(stepCount, rightCount);
+    }
+
+    function buildDrops(finalCounts, totalBalls) {
+      const drops = [];
+      if (totalBalls <= MAX_ANIMATED_DROPS) {
+        for (let k = 0; k < finalCounts.length; k += 1) {
+          for (let i = 0; i < finalCounts[k]; i += 1) drops.push({ value: k, weight: 1, route: routeForValue(k, finalCounts.length - 1) });
+        }
+      } else {
+        for (let k = 0; k < finalCounts.length; k += 1) {
+          const count = finalCounts[k];
+          if (!count) continue;
+          const pieces = Math.max(1, Math.round(count / totalBalls * MAX_ANIMATED_DROPS));
+          const base = Math.floor(count / pieces);
+          let rest = count - base * pieces;
+          for (let i = 0; i < pieces; i += 1) {
+            const weight = base + (rest > 0 ? 1 : 0);
+            rest -= rest > 0 ? 1 : 0;
+            if (weight > 0) drops.push({ value: k, weight, route: routeForValue(k, finalCounts.length - 1) });
+          }
+        }
+      }
+
+      for (let i = drops.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [drops[i], drops[j]] = [drops[j], drops[i]];
+      }
+
+      for (let i = 0; i < drops.length; i += 1) {
+        drops[i].start = drops.length <= 1 ? 0 : i / (drops.length - 1) * FALL_SPREAD;
+      }
+      return drops;
+    }
+
+    function buildSimulation() {
+      const params = readParams();
+      const pmf = binomialPMF(params.n, params.p);
+      const cdf = cumulative(pmf);
+      const finalCounts = Array(params.n + 1).fill(0);
+
+      for (let i = 0; i < params.balls; i += 1) {
+        finalCounts[sampleCDF(cdf)] += 1;
+      }
+
+      const intervalInfo = buildIntervals(params.n, params.intervalSpec);
+      const expectedIntervalsExact = aggregateByIntervals(pmf.map(v => v * params.balls), intervalInfo.intervals);
+      const expectedIntervals = roundNearestWithFixedSum(expectedIntervalsExact, params.balls);
+      const finalIntervals = aggregateByIntervals(finalCounts, intervalInfo.intervals);
+      const expectedDensities = intervalInfo.intervals.map((interval, i) => expectedIntervals[i] / intervalWidth(interval));
+      const observedDensities = intervalInfo.intervals.map((interval, i) => finalIntervals[i] / intervalWidth(interval));
+      const curveDensities = pmf.map(value => value * params.balls);
+      const scaleMax = Math.max(1, ...expectedDensities, ...observedDensities, ...curveDensities) * 1.18;
+
+      state = {
+        params,
+        pmf,
+        finalCounts,
+        currentCounts: params.instant ? finalCounts.slice() : Array(params.n + 1).fill(0),
+        intervalInfo,
+        expectedIntervalsExact,
+        expectedIntervals,
+        scaleMax,
+        drops: params.instant ? [] : buildDrops(finalCounts, params.balls),
+        startTime: performance.now(),
+        done: params.instant,
+        activeDrops: [],
+        hoverIntervalIndex: -1,
+        lockedIntervalIndex: -1
+      };
+
+      updateInfoCards(true);
+    }
+
+    function geometry() {
+      const { width, height } = sceneSize();
+      const mobile = width < 620;
+      const top = mobile ? 44 : 58;
+      const histBottom = height - (mobile ? 46 : 54);
+      const histTop = height * (mobile ? 0.57 : 0.58);
+      const histHeight = Math.max(96, histBottom - histTop);
+      const centerX = width / 2;
+      const graphW = Math.min(width - (mobile ? 28 : 58), 980);
+      const graphLeft = centerX - graphW / 2;
+      const graphRight = centerX + graphW / 2;
+      const nailBottom = histTop - (mobile ? 42 : 54);
+      const boardW = Math.min(graphW, 850);
+      const boardLeft = centerX - boardW / 2;
+      const boardRight = centerX + boardW / 2;
+
+      return {
+        width,
+        height,
+        mobile,
+        top,
+        centerX,
+        nailBottom,
+        histTop,
+        histBottom,
+        histHeight,
+        graphLeft,
+        graphRight,
+        graphW,
+        boardLeft,
+        boardRight,
+        boardW
+      };
+    }
+
+    function xForValue(value, g) {
+      const n = state.params.n;
+      return g.graphLeft + ((value + 0.5) / (n + 1)) * g.graphW;
+    }
+
+    function xForBoundary(value, g) {
+      const n = state.params.n;
+      return g.graphLeft + (value / (n + 1)) * g.graphW;
+    }
+
+    function intervalWidth(interval) {
+      return Math.max(1, interval.end - interval.start + 1);
+    }
+
+    function intervalRect(interval, g, gap = 1) {
+      const left = xForBoundary(interval.start, g);
+      const right = xForBoundary(interval.end + 1, g);
+      const x = left + gap / 2;
+      const width = Math.max(1, right - left - gap);
+      return { x, width, center: (left + right) / 2 };
+    }
+
+    function usesUnitBins(intervals) {
+      return intervals.length === state.params.n + 1
+        && intervals.every(interval => interval.start === interval.end);
+    }
+
+    function xForInterval(index, intervals, g) {
+      return intervalRect(intervals[index], g, 0).center;
+    }
+
+    function intervalIndexFromCanvasPoint(x, y, g) {
+      if (!state) return -1;
+      if (y < g.histTop || y > g.histBottom || x < g.graphLeft || x > g.graphRight) return -1;
+      const k = clamp(Math.floor((x - g.graphLeft) / g.graphW * (state.params.n + 1)), 0, state.params.n);
+      return intervalIndexForValue(k, state.intervalInfo.intervals);
+    }
+
+    function roundedRect(x, y, w, h, r) {
+      const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, w, h, radius);
+        return;
+      }
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+    }
+
+    function drawText(text, x, y, size = 14, color = colors.ink, weight = 700, align = "left") {
+      ctx.font = `${weight} ${size}px Inter, Segoe UI, Arial, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(text, x, y);
+    }
+
+    function drawBackground(g) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, g.height);
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(1, "#f5f8fc");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, g.width, g.height);
+
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.strokeStyle = "rgba(37,99,235,0.08)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < g.width; x += 34) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, g.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < g.height; y += 34) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(g.width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawNail(x, y, radius) {
+      ctx.save();
+      ctx.shadowColor = "rgba(15,23,42,0.25)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 3;
+      const gradient = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.35, 1, x, y, radius);
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.28, "#94a3b8");
+      gradient.addColorStop(1, "#111827");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBall(x, y, radius, orange = false) {
+      ctx.save();
+      ctx.shadowColor = "rgba(15,23,42,0.25)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      const gradient = ctx.createRadialGradient(x - radius * 0.38, y - radius * 0.42, 1, x, y, radius);
+      gradient.addColorStop(0, "#ffffff");
+      gradient.addColorStop(0.24, orange ? "#fde68a" : "#93c5fd");
+      gradient.addColorStop(1, orange ? "#d97706" : "#1d4ed8");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function nailLayout(g) {
+      const n = state.params.n;
+      const grouped = n > SMALL_N_LIMIT;
+      const visibleRows = grouped ? (g.mobile ? 5 : 7) : n;
+      const gapY = visibleRows <= 1 ? 0 : (g.nailBottom - g.top) / Math.max(visibleRows - 1, 1);
+      const gapX = Math.min(grouped ? 58 : 54, g.boardW / Math.max(visibleRows + 1, 1));
+      const nailR = Math.max(3.6, Math.min(6.2, gapX / 8));
+
+      return { grouped, visibleRows, gapX, gapY, nailR };
+    }
+
+    function nailPoint(row, col, layout, g) {
+      return {
+        x: g.centerX + (col - row / 2) * layout.gapX,
+        y: g.top + row * layout.gapY
+      };
+    }
+
+    function drawBoard(g) {
+      const n = state.params.n;
+      const layout = nailLayout(g);
+
+      ctx.save();
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(g.boardLeft + 8, g.nailBottom + 18);
+      ctx.lineTo(g.centerX, g.top - 30);
+      ctx.lineTo(g.boardRight - 8, g.nailBottom + 18);
+      ctx.stroke();
+
+      for (let row = 0; row < layout.visibleRows; row += 1) {
+        for (let col = 0; col <= row; col += 1) {
+          const { x, y } = nailPoint(row, col, layout, g);
+          drawNail(x, y, layout.nailR);
+        }
+      }
+
+      if (layout.grouped) {
+        const blockSize = Math.ceil(n / layout.visibleRows);
+        const pillW = Math.min(430, g.graphW - 24);
+        const pillX = g.centerX - pillW / 2;
+        const pillY = g.nailBottom + 14;
+        ctx.fillStyle = "rgba(37,99,235,0.08)";
+        ctx.strokeStyle = "rgba(37,99,235,0.22)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        roundedRect(pillX, pillY, pillW, 36, 18);
+        ctx.fill();
+        ctx.stroke();
+        drawText(`${text.rowsLabel}=${n} · step≈${blockSize} · ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
+      }
+
+      ctx.restore();
+    }
+
+    function formatCountForGraph(value) {
+      const rounded = Math.round(value || 0);
+      return Math.abs(rounded) < 10000 ? formatNumber.format(rounded) : formatCompact.format(rounded);
+    }
+
+    function formatExpected(value, compact = false) {
+      const exact = Math.max(0, Number(value) || 0);
+      if (compact && exact >= 10000) return formatCompact.format(exact);
+      if (Math.abs(exact - Math.round(exact)) < 1e-9) return formatNumber.format(Math.round(exact));
+      const digits = exact >= 100 ? 1 : 2;
+      return new Intl.NumberFormat(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: digits
+      }).format(exact);
+    }
+
+    function formatRatioValue(observed, expected) {
+      if (!Number.isFinite(expected) || expected <= 0) return observed > 0 ? "∞" : "0";
+      const ratio = observed / expected;
+      const digits = ratio >= 10 ? 1 : ratio >= 1 ? 2 : 3;
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: digits }).format(ratio);
+    }
+
+    function formatObservedExpected(observed, expected, compact = false) {
+      return `${formatCountForGraph(observed)}/${formatExpected(expected, compact)}`;
+    }
+
+    function intervalRelativeError(observed, expectedCurrent, total) {
+      if (!Number.isFinite(total) || total <= 0) return null;
+      if (!Number.isFinite(expectedCurrent) || expectedCurrent <= 0) return observed > 0 ? Infinity : 0;
+      return Math.abs(observed - expectedCurrent) / expectedCurrent;
+    }
+
+    function hueForError(error) {
+      if (error === null) return 215;
+      return Math.round((1 - clamp(error, 0, 1)) * 142);
+    }
+
+    function colorForError(error, alpha = 1, lightness = 48) {
+      if (error === null) return `hsla(215, 75%, ${lightness}%, ${alpha})`;
+      return `hsla(${hueForError(error)}, 78%, ${lightness}%, ${alpha})`;
+    }
+
+    function gradientForError(error, vertical = true) {
+      const direction = vertical ? '0, 0, 0, 1' : '1, 0, 0, 0';
+      const c1 = colorForError(error, 0.90, 58);
+      const c2 = colorForError(error, 0.72, 42);
+      return { direction, c1, c2 };
+    }
+
+    function formatRelativeError(error) {
+      if (error === null) return "…";
+      if (!Number.isFinite(error)) return `${text.errLabel}=∞`;
+      return `${text.errLabel}=${Math.round(error * 100)}%`;
+    }
+
+    function drawHistogramCounts(g, intervals, observedIntervals, expectedNowIntervals, count, base, total) {
+      const maxLabels = g.mobile ? 24 : 64;
+      if (count > maxLabels) {
+        drawText("bᵢ/eᵢ", g.centerX, g.histTop + 18, g.mobile ? 10 : 12, colors.muted, 750, "center");
+        return;
+      }
+
+      ctx.save();
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = "rgba(255,255,255,0.92)";
+      ctx.fillStyle = colors.ink;
+
+      for (let i = 0; i < count; i += 1) {
+        const rect = intervalRect(intervals[i], g, count > 80 ? 0 : 2);
+        const rotated = rect.width < (g.mobile ? 18 : 20);
+        const size = rotated ? (g.mobile ? 10 : 11) : clamp(rect.width * 0.42, g.mobile ? 10 : 11, 13);
+        const value = observedIntervals[i] || 0;
+        const expected = expectedNowIntervals[i] || 0;
+        const error = intervalRelativeError(value, expected, total);
+        const density = value / intervalWidth(intervals[i]);
+        const h = Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
+        const label = formatObservedExpected(value, expected, true);
+        const x = rect.center;
+        const y = clamp(base - h - (rotated ? 10 : 13), g.histTop + 12, base - 12);
+        ctx.font = `850 ${size}px Inter, Segoe UI, Arial, sans-serif`;
+
+        if (rotated) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(-Math.PI / 3.2);
+          ctx.textAlign = "left";
+          ctx.strokeText(label, 0, 0);
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
+          continue;
+        }
+
+        const metrics = ctx.measureText(label);
+        const boxW = Math.max(metrics.width + 10, Math.min(28, rect.width + 10));
+        const boxH = size + 8;
+        ctx.fillStyle = "rgba(255,255,255,0.82)";
+        ctx.strokeStyle = "rgba(100,116,139,0.18)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        roundedRect(x - boxW / 2, y - boxH / 2, boxW, boxH, boxH / 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = value > 0 ? colorForError(error, 1, 35) : "rgba(102,112,133,0.70)";
+        ctx.textAlign = "center";
+        ctx.fillText(label, x, y + 0.5);
+      }
+
+      ctx.restore();
+    }
+
+    function drawHistogram(g) {
+      const intervals = state.intervalInfo.intervals;
+      const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
+      const total = currentTotal();
+      const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const count = intervals.length;
+      const unitBins = usesUnitBins(intervals);
+      const barGap = count > 80 ? 0 : count > 36 ? 1 : 3;
+      const base = g.histBottom;
+
+      ctx.save();
+
+      ctx.strokeStyle = "rgba(100,116,139,0.20)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i += 1) {
+        const y = g.histTop + i / 4 * g.histHeight;
+        ctx.beginPath();
+        ctx.moveTo(g.graphLeft, y);
+        ctx.lineTo(g.graphRight, y);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < count; i += 1) {
+        const observed = observedIntervals[i] || 0;
+        const expectedNow = expectedNowIntervals[i] || 0;
+        const error = intervalRelativeError(observed, expectedNow, total);
+        const rect = intervalRect(intervals[i], g, barGap);
+        const density = unitBins ? observed : observed / intervalWidth(intervals[i]);
+        const h = Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
+        const x = rect.x;
+        const y = base - h;
+        const selectedIndex = activeSelectedIntervalIndex();
+        const selected = i === selectedIndex;
+        const grad = ctx.createLinearGradient(0, y, 0, base);
+        grad.addColorStop(0, colorForError(error, 0.86, 60));
+        grad.addColorStop(1, colorForError(error, 0.70, 42));
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        roundedRect(x, y, rect.width, Math.max(1, h), Math.min(8, rect.width / 2));
+        ctx.fill();
+
+        if (selected) {
+          ctx.strokeStyle = colors.blue;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          roundedRect(x - 2, y - 2, rect.width + 4, Math.max(5, h + 4), Math.min(9, rect.width / 2 + 2));
+          ctx.stroke();
+        }
+      }
+
+      if (curveInput.checked) {
+        ctx.strokeStyle = colors.red;
+        ctx.lineWidth = state.params.n > 180 ? 2.2 : 3.2;
+        ctx.beginPath();
+        for (let k = 0; k <= state.params.n; k += 1) {
+          const x = xForValue(k, g);
+          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
+          if (k === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = colors.redSoft;
+        const pointStep = Math.max(1, Math.ceil(state.params.n / 120));
+        for (let k = 0; k <= state.params.n; k += pointStep) {
+          const x = xForValue(k, g);
+          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
+          ctx.beginPath();
+          ctx.arc(x, y, state.params.n > 120 ? 1.7 : 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (!unitBins) {
+          ctx.strokeStyle = "rgba(239,68,68,0.72)";
+          ctx.lineWidth = 2;
+          for (let i = 0; i < count; i += 1) {
+            const rect = intervalRect(intervals[i], g, barGap);
+            const density = state.expectedIntervals[i] / intervalWidth(intervals[i]);
+            const y = base - Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
+            ctx.beginPath();
+            ctx.moveTo(rect.x, y);
+            ctx.lineTo(rect.x + rect.width, y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      drawHistogramCounts(g, intervals, observedIntervals, expectedNowIntervals, count, base, total);
+
+      ctx.strokeStyle = "rgba(23,32,51,0.7)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(g.graphLeft, base);
+      ctx.lineTo(g.graphRight, base);
+      ctx.stroke();
+
+      drawText(`bᵢ/eᵢ · ${text.errLabel}: 0%→100%`, g.centerX, g.height - 14, g.mobile ? 11 : 13, colors.muted, 750, "center");
+      ctx.restore();
+    }
+
+    function ballPathPoint(drop, g, targetX, radius) {
+      const layout = nailLayout(g);
+      const route = drop.route && drop.route.length ? drop.route : routeForValue(drop.value, state.params.n);
+      const rows = Math.min(layout.visibleRows, route.length || layout.visibleRows);
+      const points = [{ x: g.centerX, y: g.top - 36 }];
+      let col = 0;
+
+      for (let row = 0; row < rows; row += 1) {
+        const goesRight = Boolean(route[row]);
+        const peg = nailPoint(row, Math.min(col, row), layout, g);
+        const side = goesRight ? -1 : 1;
+        const contactDistance = radius + layout.nailR * 0.92;
+        points.push({
+          x: peg.x + side * contactDistance * 0.72,
+          y: peg.y - contactDistance * 0.70
+        });
+        if (goesRight) col += 1;
+      }
+
+      points.push({ x: targetX, y: g.histBottom - 8 });
+
+      const segmentCount = points.length - 1;
+      const scaled = clamp(drop.progress, 0, 1) * segmentCount;
+      const index = Math.min(segmentCount - 1, Math.floor(scaled));
+      const local = scaled - index;
+      const eased = local * local * (3 - 2 * local);
+      const a = points[index];
+      const b = points[index + 1];
+      const x = a.x + (b.x - a.x) * eased;
+      const segmentDy = Math.max(10, b.y - a.y);
+      const arc = Math.min(24, Math.max(8, segmentDy * 0.22));
+      const bounce = Math.sin(local * Math.PI) * arc;
+      const settle = Math.sin(local * Math.PI * 2) * 2.2 * (1 - drop.progress);
+      const y = a.y + (b.y - a.y) * eased - bounce + settle;
+      return { x, y };
+    }
+
+    function drawActiveDrops(g, elapsedScaled) {
+      const intervals = state.intervalInfo.intervals;
+      for (let i = 0; i < state.activeDrops.length; i += 1) {
+        const drop = state.activeDrops[i];
+        const index = intervalIndexForValue(drop.value, intervals);
+        const targetX = index >= 0 ? xForInterval(index, intervals, g) : xForValue(drop.value, g);
+        const radius = clamp(4.8 + Math.log10(drop.weight) * 1.25, 4.8, 10.5);
+        const { x, y } = ballPathPoint(drop, g, targetX, radius);
+        drawBall(x, y, radius, i % 7 === 0);
+      }
+    }
+
+    function updateCurrentCounts(now) {
+      const params = state.params;
+      if (params.instant || state.done) {
+        state.currentCounts = state.finalCounts.slice();
+        state.activeDrops = [];
+        state.done = true;
+        return;
+      }
+
+      const elapsedScaled = (now - state.startTime) / 1000 * params.speed;
+      const current = Array(params.n + 1).fill(0);
+      const active = [];
+      let doneWeight = 0;
+
+      for (const drop of state.drops) {
+        const progress = (elapsedScaled - drop.start) / FALL_DURATION;
+        if (progress >= 1) {
+          current[drop.value] += drop.weight;
+          doneWeight += drop.weight;
+        } else if (progress > 0) {
+          active.push({ ...drop, progress });
+        }
+      }
+
+      state.currentCounts = current;
+      state.activeDrops = active;
+      state.done = doneWeight >= params.balls && active.length === 0;
+    }
+
+    function currentTotal() {
+      return state.currentCounts.reduce((sum, value) => sum + value, 0);
+    }
+
+    function totalVariationDistance(observedIntervals) {
+      const total = currentTotal();
+      if (total <= 0) return null;
+      let distance = 0;
+      for (let i = 0; i < observedIntervals.length; i += 1) {
+        const observed = observedIntervals[i] / total;
+        const theory = state.expectedIntervalsExact[i] / state.params.balls;
+        distance += Math.abs(observed - theory);
+      }
+      return clamp(0.5 * distance, 0, 1);
+    }
+
+    function formatPercent(value, digits = 2) {
+      return `${(value * 100).toFixed(digits)}%`;
+    }
+
+    function activeSelectedIntervalIndex() {
+      if (!state) return -1;
+      return state.lockedIntervalIndex >= 0 ? state.lockedIntervalIndex : state.hoverIntervalIndex;
+    }
+
+    function intervalStats(index) {
+      if (!state || index < 0 || index >= state.intervalInfo.intervals.length) return null;
+      const params = state.params;
+      const intervals = state.intervalInfo.intervals;
+      const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
+      const total = currentTotal();
+      const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
+      const interval = intervals[index];
+      const observed = observedIntervals[index] || 0;
+      const expected = expectedNowIntervals[index] || 0;
+      const exact = expectedExactNowIntervals[index] || 0;
+      const error = intervalRelativeError(observed, expected, total);
+      const pct = total > 0 ? observed / total : 0;
+      const q = state.expectedIntervalsExact[index] / params.balls;
+      return {
+        interval,
+        observed,
+        expected,
+        exact,
+        error,
+        pct,
+        q,
+        ratio: formatRatioValue(observed, expected)
+      };
+    }
+
+    function renderSelectedInterval() {
+      const stats = intervalStats(activeSelectedIntervalIndex());
+      if (!stats) {
+        selectedInterval.classList.remove("is-visible");
+        selectedInterval.innerHTML = "";
+        return;
+      }
+
+      selectedInterval.classList.add("is-visible");
+      selectedInterval.innerHTML = `
+        <div class="selected-title">
+          <span>${escapeHTML(text.selectedTitle)} · ${escapeHTML(stats.interval.label)}</span>
+          <span>${formatRelativeError(stats.error)}</span>
+        </div>
+        <div class="selected-grid">
+          <div class="selected-item"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(stats.observed))}</strong></div>
+          <div class="selected-item"><span>eᵢ(t)</span><strong>${formatExpected(stats.expected)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.exactExpectedLabel)}</span><strong>${formatExpected(stats.exact)}</strong></div>
+          <div class="selected-item"><span>bᵢ/eᵢ</span><strong>${stats.ratio}</strong></div>
+          <div class="selected-item"><span>fᵢ(t)</span><strong>${formatPercent(stats.pct, 1)}</strong></div>
+          <div class="selected-item"><span>qᵢ</span><strong>${formatPercent(stats.q, 1)}</strong></div>
+        </div>`;
+    }
+
+    function updateInfoCards(force = false) {
+      if (!state) return;
+      const now = performance.now();
+      if (!force && now - lastInfoUpdate < 110) return;
+      lastInfoUpdate = now;
+      const params = state.params;
+      const intervals = state.intervalInfo.intervals;
+      const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
+      const total = currentTotal();
+      const distance = totalVariationDistance(observedIntervals);
+      const mu = params.n * params.p;
+      const sigma = Math.sqrt(params.n * params.p * (1 - params.p));
+
+      progressFact.textContent = `${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
+      meanFact.textContent = mu.toFixed(2);
+      sigmaFact.textContent = sigma.toFixed(2);
+      modeFact.textContent = `${intervals.length}`;
+
+      if (distance === null) {
+        errorValue.textContent = "…";
+        errorFill.style.width = "0%";
+        errorFill.style.background = "linear-gradient(90deg, var(--blue2), var(--blue))";
+        errorText.textContent = text.zeroBalls;
+      } else {
+        errorValue.textContent = formatPercent(distance, 2);
+        errorFill.style.width = `${Math.min(100, distance * 100).toFixed(2)}%`;
+        errorFill.style.background = distance > 0.42
+          ? "linear-gradient(90deg, #fb7185, #ef4444)"
+          : distance > 0.18
+            ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
+            : "linear-gradient(90deg, #38bdf8, #2563eb)";
+        errorText.textContent = `${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)} · ${text.errLabel}=${formatPercent(distance, 2)}`;
+      }
+
+      const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
+      const expectedSum = expectedNowIntervals.reduce((sum, value) => sum + value, 0);
+
+      intervalSummary.textContent = state.intervalInfo.summary;
+      intervalHint.textContent = `${state.intervalInfo.hint} · ${text.roundedRule} · Σeᵢ=${formatExpected(expectedSum)} · ${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
+      renderSelectedInterval();
+
+      const maxCount = Math.max(1, ...observedIntervals, ...expectedNowIntervals);
+      intervalRows.innerHTML = intervals.map((interval, i) => {
+        const count = observedIntervals[i] || 0;
+        const expectedNow = expectedNowIntervals[i] || 0;
+        const expectedExactNow = expectedExactNowIntervals[i] || 0;
+        const error = intervalRelativeError(count, expectedNow, total);
+        const pct = total > 0 ? count / total : 0;
+        const q = state.expectedIntervalsExact[i] / params.balls;
+        const width = Math.min(100, count / maxCount * 100);
+        const expectedWidth = Math.min(100, expectedNow / maxCount * 100);
+        const ratioText = formatRatioValue(count, expectedNow);
+        const qualityColor = colorForError(error, 1, 46);
+        const qualitySoft = colorForError(error, 0.11, 52);
+        const qualityBorder = colorForError(error, 0.42, 48);
+        const title = `${interval.start}–${interval.end}`;
+        const selected = i === activeSelectedIntervalIndex() ? " is-selected" : "";
+        return `
+          <div class="interval-row${selected}" data-index="${i}" title="${escapeHTML(title)}" style="border-color:${qualityBorder}; background:linear-gradient(135deg, rgba(255,255,255,0.72), ${qualitySoft});">
+            <div class="interval-line">
+              <span class="interval-label">${escapeHTML(interval.label)}</span>
+              <strong class="interval-count" style="color:${qualityColor}">${formatObservedExpected(count, expectedNow, false)}</strong>
+            </div>
+            <div class="interval-values">
+              <div class="interval-value expected"><span>eᵢ(t)</span><strong>${formatExpected(expectedNow)}</strong></div>
+              <div class="interval-value expected"><span>${text.exactExpectedLabel}</span><strong>${formatExpected(expectedExactNow)}</strong></div>
+              <div class="interval-value observed"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(count))}</strong></div>
+            </div>
+            <div class="tinybar" aria-hidden="true" title="eᵢ=${formatExpected(expectedNow)}"><span style="width:${expectedWidth.toFixed(2)}%; background:linear-gradient(90deg, rgba(100,116,139,0.20), rgba(100,116,139,0.36));"></span></div>
+            <div class="tinybar" aria-hidden="true" title="bᵢ=${formatNumber.format(Math.round(count))}" style="margin-top:4px;"><span style="width:${width.toFixed(2)}%; background:linear-gradient(90deg, ${colorForError(error, 0.72, 58)}, ${colorForError(error, 0.95, 45)});"></span></div>
+            <div class="interval-ratio">bᵢ/eᵢ=${ratioText}</div>
+            <div class="interval-quality" style="color:${qualityColor}">${formatRelativeError(error)}</div>
+            <div class="interval-pct">fᵢ(t)=${formatPercent(pct, 1)} · qᵢ=${formatPercent(q, 1)}</div>
+          </div>`;
+      }).join("");
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function draw(now) {
+      if (!state) return;
+      updateCurrentCounts(now);
+
+      const g = geometry();
+      drawBackground(g);
+      drawBoard(g);
+      drawHistogram(g);
+      drawActiveDrops(g);
+      updateInfoCards(state.done);
+
+      if (!state.done) {
+        animation = requestAnimationFrame(draw);
+      }
+    }
+
+    function relaunch() {
+      if (animation) cancelAnimationFrame(animation);
+      resizeCanvas();
+      buildSimulation();
+      animation = requestAnimationFrame(draw);
+    }
+
+    function redrawOnly() {
+      if (!state) return;
+      state.params.speed = clamp(Number(speedInput.value) || 1.5, 0.3, 8);
+      speedValue.textContent = Number(state.params.speed.toFixed(1)).toString();
+      resizeCanvas();
+      draw(performance.now());
+    }
+
+    function refreshSelection() {
+      draw(performance.now());
+      updateInfoCards(true);
+    }
+
+    function setHoverInterval(index) {
+      if (!state || state.lockedIntervalIndex >= 0 || state.hoverIntervalIndex === index) return;
+      state.hoverIntervalIndex = index;
+      refreshSelection();
+    }
+
+    function toggleLockedInterval(index) {
+      if (!state || index < 0) return;
+      state.lockedIntervalIndex = state.lockedIntervalIndex === index ? -1 : index;
+      state.hoverIntervalIndex = -1;
+      refreshSelection();
+    }
+
+    restartButton.addEventListener("click", relaunch);
+    rowsInput.addEventListener("change", relaunch);
+    probabilityInput.addEventListener("change", relaunch);
+    ballsInput.addEventListener("change", relaunch);
+    intervalsInput.addEventListener("change", relaunch);
+    instantInput.addEventListener("change", relaunch);
+    curveInput.addEventListener("change", redrawOnly);
+    speedInput.addEventListener("input", redrawOnly);
+
+    canvas.addEventListener("mousemove", event => {
+      if (!state) return;
+      const rect = canvas.getBoundingClientRect();
+      const g = geometry();
+      const index = intervalIndexFromCanvasPoint(event.clientX - rect.left, event.clientY - rect.top, g);
+      canvas.style.cursor = index >= 0 ? "pointer" : "default";
+      setHoverInterval(index);
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      canvas.style.cursor = "default";
+      setHoverInterval(-1);
+    });
+
+    canvas.addEventListener("click", event => {
+      if (!state) return;
+      const rect = canvas.getBoundingClientRect();
+      const g = geometry();
+      const index = intervalIndexFromCanvasPoint(event.clientX - rect.left, event.clientY - rect.top, g);
+      toggleLockedInterval(index);
+    });
+
+    intervalRows.addEventListener("mousemove", event => {
+      const row = event.target.closest(".interval-row");
+      if (!row) return;
+      setHoverInterval(Number(row.dataset.index));
+    });
+
+    intervalRows.addEventListener("mouseleave", () => setHoverInterval(-1));
+
+    intervalRows.addEventListener("click", event => {
+      const row = event.target.closest(".interval-row");
+      if (!row) return;
+      toggleLockedInterval(Number(row.dataset.index));
+    });
+
+    window.addEventListener("keydown", event => {
+      if (event.target instanceof HTMLInputElement && event.key !== "Enter") return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        relaunch();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      draw(performance.now());
+    });
+
+    applyLanguage();
+    resizeCanvas();
+    relaunch();
+  </script>
+</body>
+</html>
