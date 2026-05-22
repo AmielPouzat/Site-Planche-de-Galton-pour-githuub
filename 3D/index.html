@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus 3D pédagogique</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            color: white;
+            font-family: Arial, sans-serif;
+            background: #86d8ff;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #info,
+        #chapter-nav,
+        #interaction-prompt {
+            position: absolute;
+            background: linear-gradient(180deg, rgba(28, 43, 76, 0.82), rgba(12, 20, 42, 0.78));
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 16px 32px rgba(38, 76, 112, 0.24);
+            backdrop-filter: blur(10px);
+        }
+
+        #info {
+            top: 12px;
+            left: 12px;
+            max-width: min(320px, calc(100vw - 24px));
+            padding: 14px;
+            border-radius: 8px;
+            line-height: 1.35;
+        }
+
+        #info h3,
+        #info p {
+            margin: 0 0 8px;
+        }
+
+        #info h3 {
+            color: #f7d85b;
+            font-size: 19px;
+        }
+
+        #info p {
+            font-size: 13px;
+        }
+
+        #info p:last-child {
+            margin-bottom: 0;
+        }
+
+        #chapter-nav {
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        #chapter-nav button {
+            min-width: 72px;
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: white;
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            font: inherit;
+            font-size: 13px;
+        }
+
+        #chapter-nav button:hover,
+        #chapter-nav button.active {
+            background: #35c7d0;
+            color: #07101d;
+        }
+
+        #interaction-prompt {
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%) translateY(12px);
+            min-width: min(420px, calc(100vw - 32px));
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 160ms ease, transform 160ms ease;
+        }
+
+        #interaction-prompt.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 640px) {
+            #chapter-nav {
+                top: auto;
+                right: 12px;
+                bottom: 12px;
+            }
+
+            #interaction-prompt {
+                bottom: 72px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div id="info">
+        <h3 id="chapter-title">Campus 3D</h3>
+        <p id="chapter-subtitle">Approche un portail, puis appuie sur E pour entrer.</p>
+        <p><strong>Contrôles</strong></p>
+        <p>W/S ou flèches haut/bas: avancer et reculer</p>
+        <p>A/D ou flèches gauche/droite: tourner</p>
+        <p>Espace: sauter plus haut en maintenant</p>
+    </div>
+
+    <nav id="chapter-nav" aria-label="Chapitres"></nav>
+    <div id="interaction-prompt"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script src="js/core/Theme.js"></script>
+    <script src="assets/textures/Textures.js"></script>
+    <script src="js/scenes/ChapterTemplate.js"></script>
+    <script src="js/buildings/Building.js"></script>
+    <script src="js/buildings/CityGenerator.js"></script>
+    <script src="js/car/Car.js"></script>
+    <script src="js/car/CarController.js"></script>
+    <script src="js/world/World.js"></script>
+    <script src="js/core/CollisionSystem.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
