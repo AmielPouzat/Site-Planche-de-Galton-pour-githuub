@@ -201,6 +201,20 @@
       background: linear-gradient(135deg, #111827, #1f2937);
     }
 
+    .language-button {
+      height: 42px;
+      border: 1px solid rgba(37, 99, 235, 0.22);
+      border-radius: 14px;
+      color: var(--blue);
+      background: rgba(255, 255, 255, 0.72);
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .language-button:hover {
+      background: rgba(37, 99, 235, 0.08);
+    }
+
     .board-card {
       overflow: hidden;
       padding: 10px;
@@ -526,6 +540,96 @@
       box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.10);
     }
 
+    .export-panel {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(102, 112, 133, 0.18);
+    }
+
+    .export-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px 14px;
+      align-items: baseline;
+    }
+
+    .export-head h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .export-count,
+    .export-status {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .export-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .export-button {
+      min-height: 36px;
+      border: 1px solid rgba(102, 112, 133, 0.22);
+      border-radius: 12px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.72);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .export-button:hover {
+      border-color: rgba(37, 99, 235, 0.40);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .export-button.primary {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--blue), var(--blue2));
+    }
+
+    .export-text {
+      width: 100%;
+      min-height: 128px;
+      max-height: 280px;
+      resize: vertical;
+      border: 1px solid rgba(102, 112, 133, 0.20);
+      border-radius: 14px;
+      padding: 12px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.76);
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      outline: none;
+    }
+
+    .export-text:focus {
+      border-color: rgba(37, 99, 235, 0.56);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
+    .export-status {
+      min-height: 18px;
+      margin: 0;
+    }
+
+    .export-status[data-tone="warning"] {
+      color: #b45309;
+    }
+
+    .export-status[data-tone="success"] {
+      color: #047857;
+    }
+
     @media (max-width: 980px) {
       .app { padding: 14px; }
       .hero { grid-template-columns: 1fr; }
@@ -545,6 +649,7 @@
       .interval-head { display: grid; }
       .interval-summary { text-align: left; white-space: normal; }
       .interval-rows { grid-template-columns: 1fr; max-height: 390px; }
+      .export-button { flex: 1 1 128px; }
     }
   </style>
 </head>
@@ -558,6 +663,7 @@
 
       <form class="controls" id="controls" autocomplete="off">
         <button class="primary-button" id="restart" type="button" title="↻">↻</button>
+        <button class="language-button" id="languageToggle" type="button">FR</button>
 
         <label class="field" id="rowsLabel" title="Trials"><span>n</span>
           <input id="rows" type="number" min="1" max="500" step="1" value="10">
@@ -575,13 +681,13 @@
           <input id="intervals" type="text" value="*" spellcheck="false" aria-label="I">
         </label>
 
-        <label class="field range-field wide-field"><span>v</span>
+        <label class="field range-field wide-field" id="speedLabel"><span>Speed</span>
           <input id="speed" type="range" min="0.3" max="8" step="0.1" value="1.5">
           <span class="range-value" id="speedValue">1.5</span>
         </label>
 
-        <label class="check-field" id="curveLabel" title="Expected counts"><input id="curve" type="checkbox" checked> <span>eᵢ</span></label>
-        <label class="check-field" id="instantLabel" title="Instant"><input id="instant" type="checkbox"> <span>⚡</span></label>
+        <label class="check-field" id="curveLabel" title="Normal curve"><input id="curve" type="checkbox" checked> <span>Normal</span></label>
+        <label class="check-field" id="instantLabel" title="Instant"><input id="instant" type="checkbox"> <span>Fast</span></label>
       </form>
     </section>
 
@@ -591,21 +697,21 @@
 
     <section class="info-grid" id="infoGrid" aria-label="fit and bins">
       <article class="stat-card">
-        <h2 id="fitTitle">Fit</h2>
+        <h2 id="fitTitle">Global gap</h2>
         <div class="metric">
-          <div class="metric-top"><span id="fitLabel" title="Formula: ½Σᵢ|fᵢ(t)−qᵢ|">obs vs exp</span><strong id="errorValue">…</strong></div>
+          <div class="metric-top"><span id="fitLabel" title="Observed frequencies compared with the binomial expectation">Observed vs binomial</span><strong id="errorValue">…</strong></div>
           <div class="bar" aria-hidden="true"><span id="errorFill"></span></div>
         </div>
-        <p class="muted" id="errorText">N(t)=0</p>
+        <p class="muted" id="errorText">0 observed ball</p>
       </article>
 
       <article class="stat-card">
-        <h2 id="paramsTitle">n,p,N</h2>
+        <h2 id="paramsTitle">Summary</h2>
         <div class="facts">
-          <div class="fact"><span id="progressLabel">N(t)</span><strong id="progressFact">0/120</strong></div>
-          <div class="fact"><span id="meanLabel">μ=np</span><strong id="meanFact">5</strong></div>
-          <div class="fact"><span id="sigmaLabel">σ=√np(1−p)</span><strong id="sigmaFact">1.58</strong></div>
-          <div class="fact"><span id="modeLabel">bins</span><strong id="modeFact">*</strong></div>
+          <div class="fact"><span id="progressLabel">Observed balls</span><strong id="progressFact">0/120</strong></div>
+          <div class="fact"><span id="meanLabel">Mean</span><strong id="meanFact">5</strong></div>
+          <div class="fact"><span id="sigmaLabel">Variance</span><strong id="sigmaFact">2.5</strong></div>
+          <div class="fact"><span id="modeLabel">Intervals</span><strong id="modeFact">*</strong></div>
         </div>
       </article>
 
@@ -614,10 +720,25 @@
           <h2 id="binsTitle">Bins</h2>
           <div class="interval-summary" id="intervalSummary">I</div>
         </div>
-        <p class="interval-hint" id="intervalHint">bᵢ = observed balls · eᵢ = rounded expected balls</p>
+        <p class="interval-hint" id="intervalHint">Each interval shows observed balls, binomial expectation, normal expectation, then integer gaps.</p>
         <div class="interval-legend" id="intervalLegend" aria-label="Relative error by bin"><span id="legendLow">err=0%</span><span class="legend-ramp" aria-hidden="true"></span><span id="legendHigh">err≥100%</span></div>
         <div class="selected-interval" id="selectedInterval"></div>
         <div class="interval-rows" id="intervalRows"></div>
+        <div class="export-panel" aria-label="Export">
+          <div class="export-head">
+            <h3 id="exportTitle">Export observations</h3>
+            <span class="export-count" id="exportCount">0 observations</span>
+          </div>
+          <div class="export-actions">
+            <button class="export-button primary" type="button" data-export-format="csv" id="exportCsv">CSV</button>
+            <button class="export-button" type="button" data-export-format="python" id="exportPython">Python</button>
+            <button class="export-button" type="button" data-export-format="r" id="exportR">R</button>
+            <button class="export-button" type="button" data-export-format="javascript" id="exportJavascript">JavaScript</button>
+            <button class="export-button" type="button" id="copyExport">Copy</button>
+          </div>
+          <textarea class="export-text" id="exportText" readonly spellcheck="false"></textarea>
+          <p class="export-status" id="exportStatus"></p>
+        </div>
       </article>
     </section>
   </main>
@@ -635,6 +756,7 @@
     const curveInput = document.getElementById("curve");
     const instantInput = document.getElementById("instant");
     const restartButton = document.getElementById("restart");
+    const languageToggle = document.getElementById("languageToggle");
 
     const speedValue = document.getElementById("speedValue");
     const mainTitle = document.getElementById("mainTitle");
@@ -643,6 +765,7 @@
     const probabilityLabel = document.getElementById("probabilityLabel");
     const ballsLabel = document.getElementById("ballsLabel");
     const intervalsLabel = document.getElementById("intervalsLabel");
+    const speedLabel = document.getElementById("speedLabel");
     const curveLabel = document.getElementById("curveLabel");
     const instantLabel = document.getElementById("instantLabel");
     const infoGrid = document.getElementById("infoGrid");
@@ -668,9 +791,17 @@
     const legendHigh = document.getElementById("legendHigh");
     const selectedInterval = document.getElementById("selectedInterval");
     const intervalRows = document.getElementById("intervalRows");
+    const exportTitle = document.getElementById("exportTitle");
+    const exportCount = document.getElementById("exportCount");
+    const exportText = document.getElementById("exportText");
+    const exportStatus = document.getElementById("exportStatus");
+    const exportButtons = Array.from(document.querySelectorAll("[data-export-format]"));
+    const copyExportButton = document.getElementById("copyExport");
 
     const MAX_N = 500;
     const MAX_BALLS = 1000000;
+    const CODE_EXPORT_LIMIT = 5000;
+    const CSV_HEAVY_LIMIT = 100000;
     const SMALL_N_LIMIT = 18;
     const AUTO_INTERVALS_LARGE_N = 18;
     const MAX_ANIMATED_DROPS = 1100;
@@ -697,7 +828,7 @@
     });
     const translations = window.GALTON_TRANSLATIONS || {};
     const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
-    const currentLanguage = translations[requestedLanguage] ? requestedLanguage : "en";
+    const currentLanguage = translations[requestedLanguage] ? requestedLanguage : "fr";
     const text = translations[currentLanguage] || translations.en || {};
     let state = null;
     let animation = null;
@@ -719,8 +850,11 @@
       setControlLabel(probabilityLabel, text.probabilityLabel, text.probabilityTitle);
       setControlLabel(ballsLabel, text.ballsLabel, text.ballsTitle);
       setControlLabel(intervalsLabel, text.intervalsLabel, text.intervalsTitle);
-      setControlLabel(curveLabel, "eᵢ", text.curveTitle);
-      setControlLabel(instantLabel, "⚡", text.instantTitle);
+      setControlLabel(speedLabel, text.speedLabel);
+      setControlLabel(curveLabel, text.curveLabel, text.curveTitle);
+      setControlLabel(instantLabel, text.instantLabel, text.instantTitle);
+      languageToggle.textContent = text.languageButton;
+      languageToggle.title = text.languageTitle;
       intervalsInput.setAttribute("aria-label", text.intervalsLabel);
 
       infoGrid.setAttribute("aria-label", text.infoAria);
@@ -730,13 +864,21 @@
       paramsTitle.textContent = text.paramsTitle;
       progressLabel.textContent = text.progressLabel;
       meanLabel.textContent = text.meanLabel;
-      sigmaLabel.textContent = text.sigmaLabel;
+      sigmaLabel.textContent = text.varianceLabel;
       modeLabel.textContent = text.modeLabel;
       binsTitle.textContent = text.binsTitle;
       intervalHint.textContent = text.intervalHintInitial;
       intervalLegend.setAttribute("aria-label", text.legendAria);
       legendLow.textContent = text.legendLow;
       legendHigh.textContent = text.legendHigh;
+      exportTitle.textContent = text.exportTitle;
+      exportText.placeholder = text.exportPlaceholder;
+      copyExportButton.textContent = text.copyExport;
+      exportButtons.forEach(button => {
+        const key = `export${button.dataset.exportFormat[0].toUpperCase()}${button.dataset.exportFormat.slice(1)}`;
+        if (text[key]) button.textContent = text[key];
+      });
+      updateExportCount();
 
       if (text.defaults) {
         rowsInput.value = text.defaults.rows;
@@ -744,6 +886,13 @@
         ballsInput.value = text.defaults.balls;
         intervalsInput.value = text.defaults.intervals;
       }
+    }
+
+    function switchLanguage() {
+      const nextLanguage = currentLanguage === "fr" ? "en" : "fr";
+      const url = new URL(window.location.href);
+      url.searchParams.set("lang", nextLanguage);
+      window.location.href = url.toString();
     }
 
     function clamp(value, min, max) {
@@ -833,6 +982,31 @@
         return v;
       });
       return pmf.map(v => v / sum);
+    }
+
+    function erf(value) {
+      const sign = value < 0 ? -1 : 1;
+      const x = Math.abs(value);
+      const t = 1 / (1 + 0.3275911 * x);
+      const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+      return sign * y;
+    }
+
+    function normalCdf(value, mean, standardDeviation) {
+      if (standardDeviation <= 0) return value < mean ? 0 : 1;
+      return 0.5 * (1 + erf((value - mean) / (standardDeviation * Math.SQRT2)));
+    }
+
+    function normalSlotExpectedCounts(n, p, totalBalls) {
+      const mean = n * p;
+      const standardDeviation = Math.sqrt(n * p * (1 - p));
+      const raw = Array.from({ length: n + 1 }, (_, k) => {
+        const left = k - 0.5;
+        const right = k + 0.5;
+        return Math.max(0, normalCdf(right, mean, standardDeviation) - normalCdf(left, mean, standardDeviation));
+      });
+      const total = raw.reduce((sum, value) => sum + value, 0) || 1;
+      return raw.map(value => value / total * totalBalls);
     }
 
     function cumulative(values) {
@@ -1081,10 +1255,10 @@
       return rounded;
     }
 
-    function roundedExpectedIntervalsForTotal(total) {
+    function roundedExpectedIntervalsForTotal(total, exactValues = state.expectedIntervalsExact) {
       if (!state) return [];
       const target = Math.max(0, Math.round(Number(total) || 0));
-      const exactNow = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, target));
+      const exactNow = exactValues.map(value => expectedExactForTotal(value, target));
       return roundNearestWithFixedSum(exactNow, target);
     }
 
@@ -1144,28 +1318,39 @@
       const pmf = binomialPMF(params.n, params.p);
       const cdf = cumulative(pmf);
       const finalCounts = Array(params.n + 1).fill(0);
+      const observations = Array(params.balls);
 
       for (let i = 0; i < params.balls; i += 1) {
-        finalCounts[sampleCDF(cdf)] += 1;
+        const value = sampleCDF(cdf);
+        observations[i] = value;
+        finalCounts[value] += 1;
       }
 
       const intervalInfo = buildIntervals(params.n, params.intervalSpec);
       const expectedIntervalsExact = aggregateByIntervals(pmf.map(v => v * params.balls), intervalInfo.intervals);
       const expectedIntervals = roundNearestWithFixedSum(expectedIntervalsExact, params.balls);
+      const normalSlotExpected = normalSlotExpectedCounts(params.n, params.p, params.balls);
+      const normalIntervalsExact = aggregateByIntervals(normalSlotExpected, intervalInfo.intervals);
+      const normalIntervals = roundNearestWithFixedSum(normalIntervalsExact, params.balls);
       const finalIntervals = aggregateByIntervals(finalCounts, intervalInfo.intervals);
       const expectedDensities = intervalInfo.intervals.map((interval, i) => expectedIntervals[i] / intervalWidth(interval));
+      const normalDensities = intervalInfo.intervals.map((interval, i) => normalIntervals[i] / intervalWidth(interval));
       const observedDensities = intervalInfo.intervals.map((interval, i) => finalIntervals[i] / intervalWidth(interval));
-      const curveDensities = pmf.map(value => value * params.balls);
-      const scaleMax = Math.max(1, ...expectedDensities, ...observedDensities, ...curveDensities) * 1.18;
+      const curveDensities = normalSlotExpected;
+      const scaleMax = Math.max(1, ...expectedDensities, ...normalDensities, ...observedDensities, ...curveDensities) * 1.18;
 
       state = {
         params,
         pmf,
+        observations,
         finalCounts,
         currentCounts: params.instant ? finalCounts.slice() : Array(params.n + 1).fill(0),
         intervalInfo,
         expectedIntervalsExact,
         expectedIntervals,
+        normalSlotExpected,
+        normalIntervalsExact,
+        normalIntervals,
         scaleMax,
         drops: params.instant ? [] : buildDrops(finalCounts, params.balls),
         startTime: performance.now(),
@@ -1175,6 +1360,7 @@
         lockedIntervalIndex: -1
       };
 
+      clearExport();
       updateInfoCards(true);
     }
 
@@ -1384,7 +1570,7 @@
         roundedRect(pillX, pillY, pillW, 36, 18);
         ctx.fill();
         ctx.stroke();
-        drawText(`${text.rowsLabel}=${n} · step≈${blockSize} · ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
+        drawText(`${text.rowsLabel}: ${n} · ${text.condensedRowsLabel} ${layout.visibleRows}/${n}`, g.centerX, pillY + 23, g.mobile ? 12 : 13, colors.blue, 850, "center");
       }
 
       ctx.restore();
@@ -1396,14 +1582,13 @@
     }
 
     function formatExpected(value, compact = false) {
-      const exact = Math.max(0, Number(value) || 0);
-      if (compact && exact >= 10000) return formatCompact.format(exact);
-      if (Math.abs(exact - Math.round(exact)) < 1e-9) return formatNumber.format(Math.round(exact));
-      const digits = exact >= 100 ? 1 : 2;
-      return new Intl.NumberFormat(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: digits
-      }).format(exact);
+      return formatCountForGraph(value);
+    }
+
+    function formatSignedCount(value) {
+      const rounded = Math.round(Number(value) || 0);
+      if (rounded === 0) return "0";
+      return `${rounded > 0 ? "+" : "-"}${formatNumber.format(Math.abs(rounded))}`;
     }
 
     function formatRatioValue(observed, expected) {
@@ -1441,15 +1626,15 @@
     }
 
     function formatRelativeError(error) {
-      if (error === null) return "…";
-      if (!Number.isFinite(error)) return `${text.errLabel}=∞`;
-      return `${text.errLabel}=${Math.round(error * 100)}%`;
+      if (error === null) return "...";
+      if (!Number.isFinite(error)) return `${text.errLabel} infini`;
+      return `${text.errLabel} ${Math.round(error * 100)}%`;
     }
 
     function drawHistogramCounts(g, intervals, observedIntervals, expectedNowIntervals, count, base, total) {
       const maxLabels = g.mobile ? 24 : 64;
       if (count > maxLabels) {
-        drawText("bᵢ/eᵢ", g.centerX, g.histTop + 18, g.mobile ? 10 : 12, colors.muted, 750, "center");
+        drawText(text.graphLabel, g.centerX, g.histTop + 18, g.mobile ? 10 : 12, colors.muted, 750, "center");
         return;
       }
 
@@ -1508,6 +1693,7 @@
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
       const total = currentTotal();
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
+      const normalNowIntervals = roundedExpectedIntervalsForTotal(total, state.normalIntervalsExact);
       const count = intervals.length;
       const unitBins = usesUnitBins(intervals);
       const barGap = count > 80 ? 0 : count > 36 ? 1 : 3;
@@ -1559,7 +1745,8 @@
         ctx.beginPath();
         for (let k = 0; k <= state.params.n; k += 1) {
           const x = xForValue(k, g);
-          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
+          const normalExpected = expectedExactForTotal(state.normalSlotExpected[k], total);
+          const y = base - Math.min(g.histHeight, normalExpected / state.scaleMax * g.histHeight);
           if (k === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
@@ -1569,7 +1756,8 @@
         const pointStep = Math.max(1, Math.ceil(state.params.n / 120));
         for (let k = 0; k <= state.params.n; k += pointStep) {
           const x = xForValue(k, g);
-          const y = base - Math.min(g.histHeight, state.pmf[k] * state.params.balls / state.scaleMax * g.histHeight);
+          const normalExpected = expectedExactForTotal(state.normalSlotExpected[k], total);
+          const y = base - Math.min(g.histHeight, normalExpected / state.scaleMax * g.histHeight);
           ctx.beginPath();
           ctx.arc(x, y, state.params.n > 120 ? 1.7 : 2.5, 0, Math.PI * 2);
           ctx.fill();
@@ -1580,7 +1768,7 @@
           ctx.lineWidth = 2;
           for (let i = 0; i < count; i += 1) {
             const rect = intervalRect(intervals[i], g, barGap);
-            const density = state.expectedIntervals[i] / intervalWidth(intervals[i]);
+            const density = normalNowIntervals[i] / intervalWidth(intervals[i]);
             const y = base - Math.min(g.histHeight, density / state.scaleMax * g.histHeight);
             ctx.beginPath();
             ctx.moveTo(rect.x, y);
@@ -1599,7 +1787,7 @@
       ctx.lineTo(g.graphRight, base);
       ctx.stroke();
 
-      drawText(`bᵢ/eᵢ · ${text.errLabel}: 0%→100%`, g.centerX, g.height - 14, g.mobile ? 11 : 13, colors.muted, 750, "center");
+      drawText(`${text.graphLabel} · ${text.errLabel}: 0%→100%`, g.centerX, g.height - 14, g.mobile ? 11 : 13, colors.muted, 750, "center");
       ctx.restore();
     }
 
@@ -1708,27 +1896,25 @@
 
     function intervalStats(index) {
       if (!state || index < 0 || index >= state.intervalInfo.intervals.length) return null;
-      const params = state.params;
       const intervals = state.intervalInfo.intervals;
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
       const total = currentTotal();
       const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
-      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
+      const normalNowIntervals = roundedExpectedIntervalsForTotal(total, state.normalIntervalsExact);
       const interval = intervals[index];
       const observed = observedIntervals[index] || 0;
       const expected = expectedNowIntervals[index] || 0;
-      const exact = expectedExactNowIntervals[index] || 0;
+      const normal = normalNowIntervals[index] || 0;
       const error = intervalRelativeError(observed, expected, total);
-      const pct = total > 0 ? observed / total : 0;
-      const q = state.expectedIntervalsExact[index] / params.balls;
       return {
         interval,
         observed,
         expected,
-        exact,
+        normal,
+        binomialGap: observed - expected,
+        normalGap: observed - normal,
+        theoryGap: expected - normal,
         error,
-        pct,
-        q,
         ratio: formatRatioValue(observed, expected)
       };
     }
@@ -1744,17 +1930,166 @@
       selectedInterval.classList.add("is-visible");
       selectedInterval.innerHTML = `
         <div class="selected-title">
-          <span>${escapeHTML(text.selectedTitle)} · ${escapeHTML(stats.interval.label)}</span>
+          <span>${escapeHTML(text.selectedTitle)} - ${escapeHTML(stats.interval.label)}</span>
           <span>${formatRelativeError(stats.error)}</span>
         </div>
         <div class="selected-grid">
-          <div class="selected-item"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(stats.observed))}</strong></div>
-          <div class="selected-item"><span>eᵢ(t)</span><strong>${formatExpected(stats.expected)}</strong></div>
-          <div class="selected-item"><span>${escapeHTML(text.exactExpectedLabel)}</span><strong>${formatExpected(stats.exact)}</strong></div>
-          <div class="selected-item"><span>bᵢ/eᵢ</span><strong>${stats.ratio}</strong></div>
-          <div class="selected-item"><span>fᵢ(t)</span><strong>${formatPercent(stats.pct, 1)}</strong></div>
-          <div class="selected-item"><span>qᵢ</span><strong>${formatPercent(stats.q, 1)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.observedLabel)}</span><strong>${formatNumber.format(Math.round(stats.observed))}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.binomialExpectedLabel)}</span><strong>${formatExpected(stats.expected)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.normalExpectedLabel)}</span><strong>${formatExpected(stats.normal)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.binomialGapLabel)}</span><strong>${formatSignedCount(stats.binomialGap)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.normalGapLabel)}</span><strong>${formatSignedCount(stats.normalGap)}</strong></div>
+          <div class="selected-item"><span>${escapeHTML(text.theoryGapLabel)}</span><strong>${formatSignedCount(stats.theoryGap)}</strong></div>
         </div>`;
+    }
+
+    function csvCell(value) {
+      const stringValue = String(value);
+      return /[",\n\r]/.test(stringValue)
+        ? `"${stringValue.replace(/"/g, '""')}"`
+        : stringValue;
+    }
+
+    function updateExportCount() {
+      if (!exportCount) return;
+      const count = state && state.observations ? state.observations.length : 0;
+      exportCount.textContent = text.exportCount.replace("{count}", formatNumber.format(count));
+    }
+
+    function setExportStatus(message, tone = "") {
+      exportStatus.textContent = message || "";
+      if (tone) {
+        exportStatus.dataset.tone = tone;
+      } else {
+        exportStatus.removeAttribute("data-tone");
+      }
+    }
+
+    function clearExport() {
+      exportText.value = "";
+      exportText.placeholder = text.exportPlaceholder;
+      setExportStatus(text.exportEmpty);
+      updateExportCount();
+    }
+
+    function observationRows() {
+      if (!state || !state.observations) return [];
+      const intervals = state.intervalInfo.intervals;
+      return state.observations.map((value, index) => {
+        const intervalIndex = intervalIndexForValue(value, intervals);
+        const interval = intervalIndex >= 0 ? intervals[intervalIndex].label : "";
+        return { index: index + 1, value, interval };
+      });
+    }
+
+    function exportObservationsCsv() {
+      const headers = text.exportCsvHeaders || ["index", "value", "interval"];
+      const lines = [headers.map(csvCell).join(",")];
+      observationRows().forEach(row => {
+        lines.push([row.index, row.value, row.interval].map(csvCell).join(","));
+      });
+      return lines.join("\n");
+    }
+
+    function codeLines(values, indent = "  ", perLine = 28) {
+      const lines = [];
+      for (let i = 0; i < values.length; i += perLine) {
+        lines.push(`${indent}${values.slice(i, i + perLine).join(", ")}`);
+      }
+      return lines;
+    }
+
+    function exportObservationsCode(format) {
+      if (!state || !state.observations) return "";
+      const values = state.observations;
+      if (values.length > CODE_EXPORT_LIMIT) return null;
+      const meta = {
+        n: state.params.n,
+        p: Number(state.params.p.toPrecision(12)),
+        balls: state.params.balls
+      };
+      const lines = codeLines(values);
+
+      if (format === "python") {
+        return [
+          `n = ${meta.n}`,
+          `p = ${meta.p}`,
+          `observations = [`,
+          `${lines.join(",\n")}`,
+          `]`
+        ].join("\n");
+      }
+
+      if (format === "r") {
+        return [
+          `n <- ${meta.n}`,
+          `p <- ${meta.p}`,
+          `observations <- c(`,
+          `${lines.join(",\n")}`,
+          `)`
+        ].join("\n");
+      }
+
+      return [
+        `const n = ${meta.n};`,
+        `const p = ${meta.p};`,
+        `const observations = [`,
+        `${lines.join(",\n")}`,
+        `];`
+      ].join("\n");
+    }
+
+    function renderExport(format) {
+      if (!state) {
+        clearExport();
+        return;
+      }
+
+      if (format === "csv") {
+        exportText.value = exportObservationsCsv();
+        const tone = state.observations.length > CSV_HEAVY_LIMIT ? "warning" : "success";
+        const key = state.observations.length > CSV_HEAVY_LIMIT ? "exportCsvHeavy" : "exportReady";
+        setExportStatus(text[key].replace("{count}", formatNumber.format(state.observations.length)), tone);
+      } else {
+        const code = exportObservationsCode(format);
+        if (code === null) {
+          exportText.value = "";
+          setExportStatus(
+            text.exportTooMany
+              .replace("{count}", formatNumber.format(state.observations.length))
+              .replace("{limit}", formatNumber.format(CODE_EXPORT_LIMIT)),
+            "warning"
+          );
+          return;
+        }
+        exportText.value = code;
+        setExportStatus(text.exportReady.replace("{count}", formatNumber.format(state.observations.length)), "success");
+      }
+
+      exportText.focus();
+      exportText.select();
+    }
+
+    function fallbackCopyExport() {
+      exportText.focus();
+      exportText.select();
+      const copied = document.execCommand("copy");
+      setExportStatus(copied ? text.exportCopied : text.exportCopyFailed, copied ? "success" : "warning");
+    }
+
+    function copyExportText() {
+      if (!exportText.value.trim()) {
+        setExportStatus(text.exportNothingToCopy, "warning");
+        return;
+      }
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(exportText.value)
+          .then(() => setExportStatus(text.exportCopied, "success"))
+          .catch(fallbackCopyExport);
+      } else {
+        fallbackCopyExport();
+      }
     }
 
     function updateInfoCards(force = false) {
@@ -1767,16 +2102,16 @@
       const observedIntervals = aggregateByIntervals(state.currentCounts, intervals);
       const total = currentTotal();
       const distance = totalVariationDistance(observedIntervals);
-      const mu = params.n * params.p;
-      const sigma = Math.sqrt(params.n * params.p * (1 - params.p));
+      const mean = params.n * params.p;
+      const variance = params.n * params.p * (1 - params.p);
 
       progressFact.textContent = `${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
-      meanFact.textContent = mu.toFixed(2);
-      sigmaFact.textContent = sigma.toFixed(2);
+      meanFact.textContent = mean.toFixed(2);
+      sigmaFact.textContent = variance.toFixed(2);
       modeFact.textContent = `${intervals.length}`;
 
       if (distance === null) {
-        errorValue.textContent = "…";
+        errorValue.textContent = "...";
         errorFill.style.width = "0%";
         errorFill.style.background = "linear-gradient(90deg, var(--blue2), var(--blue))";
         errorText.textContent = text.zeroBalls;
@@ -1788,49 +2123,49 @@
           : distance > 0.18
             ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
             : "linear-gradient(90deg, #38bdf8, #2563eb)";
-        errorText.textContent = `${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)} · ${text.errLabel}=${formatPercent(distance, 2)}`;
+        errorText.textContent = `${text.progressLabel}: ${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)} - ${text.errLabel} ${formatPercent(distance, 2)}`;
       }
 
-      const expectedNowIntervals = roundedExpectedIntervalsForTotal(total);
-      const expectedExactNowIntervals = state.expectedIntervalsExact.map(value => expectedExactForTotal(value, total));
-      const expectedSum = expectedNowIntervals.reduce((sum, value) => sum + value, 0);
+      const binomialExpectedNow = roundedExpectedIntervalsForTotal(total);
+      const normalExpectedNow = roundedExpectedIntervalsForTotal(total, state.normalIntervalsExact);
 
       intervalSummary.textContent = state.intervalInfo.summary;
-      intervalHint.textContent = `${state.intervalInfo.hint} · ${text.roundedRule} · Σeᵢ=${formatExpected(expectedSum)} · ${text.countSymbol}(t)=${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}`;
+      intervalHint.textContent = `${state.intervalInfo.hint}. ${text.integerExpectedRule} ${text.progressLabel}: ${formatNumber.format(Math.round(total))}/${formatNumber.format(params.balls)}.`;
       renderSelectedInterval();
 
-      const maxCount = Math.max(1, ...observedIntervals, ...expectedNowIntervals);
+      const maxCount = Math.max(1, ...observedIntervals, ...binomialExpectedNow, ...normalExpectedNow);
       intervalRows.innerHTML = intervals.map((interval, i) => {
         const count = observedIntervals[i] || 0;
-        const expectedNow = expectedNowIntervals[i] || 0;
-        const expectedExactNow = expectedExactNowIntervals[i] || 0;
-        const error = intervalRelativeError(count, expectedNow, total);
-        const pct = total > 0 ? count / total : 0;
-        const q = state.expectedIntervalsExact[i] / params.balls;
+        const binomialExpected = binomialExpectedNow[i] || 0;
+        const normalExpected = normalExpectedNow[i] || 0;
+        const binomialGap = count - binomialExpected;
+        const normalGap = count - normalExpected;
+        const theoryGap = binomialExpected - normalExpected;
+        const error = intervalRelativeError(count, binomialExpected, total);
         const width = Math.min(100, count / maxCount * 100);
-        const expectedWidth = Math.min(100, expectedNow / maxCount * 100);
-        const ratioText = formatRatioValue(count, expectedNow);
+        const binomialWidth = Math.min(100, binomialExpected / maxCount * 100);
+        const normalWidth = Math.min(100, normalExpected / maxCount * 100);
         const qualityColor = colorForError(error, 1, 46);
         const qualitySoft = colorForError(error, 0.11, 52);
         const qualityBorder = colorForError(error, 0.42, 48);
-        const title = `${interval.start}–${interval.end}`;
+        const title = `${interval.start}-${interval.end}`;
         const selected = i === activeSelectedIntervalIndex() ? " is-selected" : "";
         return `
           <div class="interval-row${selected}" data-index="${i}" title="${escapeHTML(title)}" style="border-color:${qualityBorder}; background:linear-gradient(135deg, rgba(255,255,255,0.72), ${qualitySoft});">
             <div class="interval-line">
               <span class="interval-label">${escapeHTML(interval.label)}</span>
-              <strong class="interval-count" style="color:${qualityColor}">${formatObservedExpected(count, expectedNow, false)}</strong>
+              <strong class="interval-count" style="color:${qualityColor}">${formatNumber.format(Math.round(count))}</strong>
             </div>
             <div class="interval-values">
-              <div class="interval-value expected"><span>eᵢ(t)</span><strong>${formatExpected(expectedNow)}</strong></div>
-              <div class="interval-value expected"><span>${text.exactExpectedLabel}</span><strong>${formatExpected(expectedExactNow)}</strong></div>
-              <div class="interval-value observed"><span>bᵢ(t)</span><strong>${formatNumber.format(Math.round(count))}</strong></div>
+              <div class="interval-value observed"><span>${escapeHTML(text.observedLabel)}</span><strong>${formatNumber.format(Math.round(count))}</strong></div>
+              <div class="interval-value expected"><span>${escapeHTML(text.binomialExpectedLabel)}</span><strong>${formatExpected(binomialExpected)}</strong></div>
+              <div class="interval-value expected"><span>${escapeHTML(text.normalExpectedLabel)}</span><strong>${formatExpected(normalExpected)}</strong></div>
             </div>
-            <div class="tinybar" aria-hidden="true" title="eᵢ=${formatExpected(expectedNow)}"><span style="width:${expectedWidth.toFixed(2)}%; background:linear-gradient(90deg, rgba(100,116,139,0.20), rgba(100,116,139,0.36));"></span></div>
-            <div class="tinybar" aria-hidden="true" title="bᵢ=${formatNumber.format(Math.round(count))}" style="margin-top:4px;"><span style="width:${width.toFixed(2)}%; background:linear-gradient(90deg, ${colorForError(error, 0.72, 58)}, ${colorForError(error, 0.95, 45)});"></span></div>
-            <div class="interval-ratio">bᵢ/eᵢ=${ratioText}</div>
+            <div class="tinybar" aria-hidden="true" title="${escapeHTML(text.binomialExpectedLabel)}: ${formatExpected(binomialExpected)}"><span style="width:${binomialWidth.toFixed(2)}%; background:linear-gradient(90deg, rgba(100,116,139,0.20), rgba(100,116,139,0.36));"></span></div>
+            <div class="tinybar" aria-hidden="true" title="${escapeHTML(text.normalExpectedLabel)}: ${formatExpected(normalExpected)}" style="margin-top:4px;"><span style="width:${normalWidth.toFixed(2)}%; background:linear-gradient(90deg, rgba(239,68,68,0.18), rgba(239,68,68,0.46));"></span></div>
+            <div class="tinybar" aria-hidden="true" title="${escapeHTML(text.observedLabel)}: ${formatNumber.format(Math.round(count))}" style="margin-top:4px;"><span style="width:${width.toFixed(2)}%; background:linear-gradient(90deg, ${colorForError(error, 0.72, 58)}, ${colorForError(error, 0.95, 45)});"></span></div>
+            <div class="interval-ratio">${escapeHTML(text.binomialGapShort)} ${formatSignedCount(binomialGap)} - ${escapeHTML(text.normalGapShort)} ${formatSignedCount(normalGap)} - ${escapeHTML(text.theoryGapShort)} ${formatSignedCount(theoryGap)}</div>
             <div class="interval-quality" style="color:${qualityColor}">${formatRelativeError(error)}</div>
-            <div class="interval-pct">fᵢ(t)=${formatPercent(pct, 1)} · qᵢ=${formatPercent(q, 1)}</div>
           </div>`;
       }).join("");
     }
@@ -1893,6 +2228,11 @@
     }
 
     restartButton.addEventListener("click", relaunch);
+    languageToggle.addEventListener("click", switchLanguage);
+    exportButtons.forEach(button => {
+      button.addEventListener("click", () => renderExport(button.dataset.exportFormat));
+    });
+    copyExportButton.addEventListener("click", copyExportText);
     rowsInput.addEventListener("change", relaunch);
     probabilityInput.addEventListener("change", relaunch);
     ballsInput.addEventListener("change", relaunch);
