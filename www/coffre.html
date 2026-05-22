@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu du coffre - Amiel Pouzat</title>
+    <meta name="description" content="Jeu web autour du code binaire et des couleurs additives : retrouve le code d'un coffre avec les valeurs 1, 2 et 4.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page coffre-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier" aria-current="page">Atelier</a>
+            <a href="/chat">Chat</a>
+            <a href="/3D/">Campus 3D</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header">
+            <p class="cv-kicker">binaire · couleur · déduction</p>
+            <h1>Jeu du coffre</h1>
+            <p>
+                Le coffre choisit un code entre 0 et 7. À toi de retrouver la bonne combinaison
+                avec trois interrupteurs : 1, 2 et 4. Les couleurs suivent le mélange rouge, vert, bleu.
+            </p>
+        </header>
+
+        <section class="tool-workbench coffre-workbench">
+            <form id="coffre-options" class="control-panel">
+                <label class="checkbox-field">
+                    <input id="hide-button-text" type="checkbox">
+                    Masquer le texte des interrupteurs
+                </label>
+                <label class="checkbox-field">
+                    <input id="hide-screen-text" type="checkbox">
+                    Masquer le code affiché
+                </label>
+                <label class="checkbox-field">
+                    <input id="freeze-screen-color" type="checkbox">
+                    Geler la couleur du coffre
+                </label>
+            </form>
+
+            <div class="result-panel coffre-panel">
+                <div id="coffre-screen" class="coffre-screen" aria-live="polite">
+                    <span>Code : 0</span>
+                </div>
+
+                <div class="coffre-readout" aria-label="Code sélectionné">
+                    <span>Sélection</span>
+                    <strong id="coffre-selection">000 = 0</strong>
+                </div>
+
+                <div class="coffre-switches" aria-label="Interrupteurs du coffre">
+                    <button id="coffre-bit-1" class="coffre-switch coffre-switch--red" type="button" data-bit="1" data-label="Rouge · 1">
+                        Rouge · 1
+                    </button>
+                    <button id="coffre-bit-2" class="coffre-switch coffre-switch--green" type="button" data-bit="2" data-label="Vert · 2">
+                        Vert · 2
+                    </button>
+                    <button id="coffre-bit-4" class="coffre-switch coffre-switch--blue" type="button" data-bit="4" data-label="Bleu · 4">
+                        Bleu · 4
+                    </button>
+                </div>
+
+                <div class="coffre-actions">
+                    <button id="coffre-validate" class="cv-button" type="button">Valider</button>
+                    <button id="coffre-replay" class="cv-button secondary" type="button" hidden>Rejouer</button>
+                </div>
+
+                <p id="coffre-result" class="coffre-result" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <section class="tool-note">
+            <h2>Principe</h2>
+            <p>
+                Les trois interrupteurs représentent les puissances 1, 2 et 4. Leur somme donne un nombre
+                de 0 à 7, exactement comme trois bits. Les options de difficulté retirent les indices petit à petit.
+            </p>
+        </section>
+    </main>
+
+    <script src="js/coffre.js"></script>
+</body>
+</html>

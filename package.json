@@ -1,0 +1,14 @@
+{
+  "name": "pouzat-fr",
+  "version": "1.0.0",
+  "description": "Site personnel pouzat.fr avec espace 3D",
+  "scripts": {
+    "check": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-Content -Raw .\\scripts\\check-syntax.js | node -\"",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-Content -Raw .\\scripts\\dev-server.js | node -\"",
+    "test": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-Content -Raw .\\scripts\\test-site.js | node -\"",
+    "verify": "npm run check && npm test"
+  },
+  "keywords": ["pouzat.fr", "site-personnel", "3d"],
+  "author": "",
+  "license": "MIT"
+}

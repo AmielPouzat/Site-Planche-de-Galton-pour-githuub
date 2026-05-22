@@ -1,66 +1,82 @@
-<html>
-
-    <head>
-
-        <link type="image/jpg" rel="icon" href="image/amiel.jpg" />
-
-        <meta charset="UTF-8"/>
-        <title>Amiel Pouzat</title>
-        <!-- favicon -->
-        <!--<link rel="icon" type="image/png" href="<?php $_APP->printRootPath(); ?>img/favicon.png"/>-->
-        <!-- JQuery -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-
-
-        <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-        <!-- Optional theme -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-
-        <!-- Latest compiled and minified JavaScript -->
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-
-
-    </head>
-
-    <body>
-    <script>
-        $(function(){
-            $("#includednav").load("module/navbar.html");
-        });
-    </script>
-
-    <div id="chat-container">
-        <div id="includednav"></div>
-
-
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amiel Pouzat</title>
+    <meta name="description" content="Site personnel d'Amiel Pouzat : CV, ateliers mathématiques, chat et campus 3D.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="home-page space-home">
+    <nav class="site-nav space-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/cv">CV</a>
+            <a href="/atelier">Atelier</a>
+            <a href="/chat">Chat</a>
+            <a href="/3D/">Campus 3D</a>
         </div>
+    </nav>
 
-        <br/>
-    <div class="col-md-8 col-md-offset-2">
+    <main>
+        <section class="space-hero">
+            <canvas id="living-stars" class="living-stars" aria-hidden="true"></canvas>
+            <div class="space-hero__shade" aria-hidden="true"></div>
 
-    <ul style="-webkit-box-shadow: 2px 3px 72px 3px rgba(0,0,0,0.49);
--moz-box-shadow: 2px 3px 72px 3px rgba(0,0,0,0.49);
-box-shadow: 2px 3px 72px 3px rgba(0,0,0,0.49);">
-        <li>
-            <a href="documents/generator.R">Code générateur fixe de nombres aléatoires sur R</a>
-        </li>
-        <img src="image/Generator1_3.png" alt="Generator" style="width:300px;height:300px;">
-        <li>
-            <a href = "documents/polynome.R">Code régression polynomial - Lagrange sur R</a>
-        </li>
-        <li>
-            <a href = "https://docs.google.com/presentation/d/1RIwzRUayom09STROez5nzxHCk0Ad90FNfVOfGw-Dq-Q/edit?usp=sharing">Essity slides</a>
-        </li>
+            <div class="space-hero__content">
+                <p class="space-kicker">mathématiques · code · transmission</p>
+                <h1>Un atelier personnel entre outils utiles et petites constellations vivantes.</h1>
+                <p class="space-lead">
+                    Un site pour garder ce qui sert vraiment : un CV clair, des instruments mathématiques,
+                    un chat Firebase qui pourra devenir liste ou carnet, et un campus 3D en exploration.
+                </p>
+                <div class="space-actions" aria-label="Accès rapides">
+                    <a class="space-button primary" href="/atelier">Explorer les outils</a>
+                    <a class="space-button" href="/cv">Lire le CV</a>
+                    <a class="space-button" href="/chat">Ouvrir le chat</a>
+                </div>
+            </div>
 
-    </ul>
+            <div class="space-hint">
+                Clique dans le ciel : les points se rapprochent, brillent, puis reprennent leur route.
+            </div>
+        </section>
 
-    </div>
+        <section class="showcase-section" aria-label="Sections principales">
+            <div class="showcase-heading">
+                <p class="space-kicker">cartographie du site</p>
+                <h2>Des pages courtes, directes, faites pour être utilisées.</h2>
+            </div>
 
-    </body>
+            <div class="showcase-grid">
+                <a class="showcase-card main-card" href="/atelier">
+                    <span>Atelier</span>
+                    <h3>Générateur, interpolation, Galton, coffre</h3>
+                    <p>Des anciens scripts et idées de cours transformés en outils web, avec résultats, graphiques et petits jeux.</p>
+                </a>
 
+                <a class="showcase-card" href="/cv">
+                    <span>Profil</span>
+                    <h3>CV web</h3>
+                    <p>Une version publique, lisible, sans téléphone ni adresse personnelle.</p>
+                </a>
 
+                <a class="showcase-card" href="/chat">
+                    <span>Firebase</span>
+                    <h3>Chat vivant</h3>
+                    <p>Une base simple pour messages, listes de courses, notes ou petits rituels partagés.</p>
+                </a>
 
+                <a class="showcase-card" href="/3D/">
+                    <span>Prototype</span>
+                    <h3>Campus 3D</h3>
+                    <p>Un espace pédagogique navigable, encore brut, mais déjà jouable.</p>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/living-stars.js"></script>
+</body>
 </html>

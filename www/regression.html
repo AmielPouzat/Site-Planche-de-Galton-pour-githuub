@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interpolation polynomiale - Amiel Pouzat</title>
+    <meta name="description" content="Interpolation polynomiale de Lagrange de couples X/Y avec coefficients rationnels exacts, courbe et résidus.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier" aria-current="page">Atelier</a>
+            <a href="/chat">Chat</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header">
+            <p class="cv-kicker">Lagrange · interpolation exacte · coefficients rationnels</p>
+            <h1>Interpolation polynomiale</h1>
+            <p>
+                Entre des couples X/Y. L'outil construit l'unique polynôme de degré au plus n - 1 qui passe par
+                les n points d'abscisses distinctes. Les calculs symboliques restent en fractions p/q quand les entrées
+                sont rationnelles ; la conversion numérique sert seulement à dessiner la courbe.
+            </p>
+        </header>
+
+        <section class="tool-workbench">
+            <form id="regression-form" class="control-panel">
+                <label>
+                    Couples X,Y
+                    <textarea id="regression-data" class="input-area">-2, 4
+-1, 1
+0, 0
+1, 1
+2, 4</textarea>
+                </label>
+                <p class="field-help">Une ligne par point. Exemples acceptés : <code>0.25, 1/3</code>, <code>1/4 ; 2</code>, <code>-1 4</code>.</p>
+                <button class="cv-button" type="submit">Calculer</button>
+                <button id="regression-example" class="cv-button secondary" type="button">Exemple cubique</button>
+                <button id="regression-runge" class="cv-button secondary" type="button">Exemple Runge</button>
+                <label>
+                    Format à copier
+                    <select id="regression-export-mode">
+                        <option value="latex">LaTeX</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python exact</option>
+                        <option value="r">R</option>
+                    </select>
+                </label>
+            </form>
+
+            <div class="result-panel">
+                <div id="regression-stats" class="stat-grid"></div>
+                <div class="formula-box">
+                    <span>Rendu mathématique</span>
+                    <div id="regression-visual" class="math-display">P(x) = ...</div>
+                </div>
+                <div class="formula-box">
+                    <span>Polynôme exact</span>
+                    <code id="regression-formula">P(x) = ...</code>
+                </div>
+                <div class="formula-box">
+                    <span>Coefficients</span>
+                    <code id="regression-coefficients">...</code>
+                </div>
+                <div class="formula-box">
+                    <span>Sortie copiable</span>
+                    <div class="copy-row">
+                        <code id="regression-export">...</code>
+                        <button id="regression-copy" class="cv-button secondary" type="button">Copier</button>
+                    </div>
+                </div>
+                <canvas id="regression-chart" class="chart-canvas" width="900" height="460"></canvas>
+                <div class="formula-box">
+                    <span>Résidus aux points fournis</span>
+                    <code id="regression-residuals">...</code>
+                </div>
+            </div>
+        </section>
+
+        <section class="tool-note">
+            <h2>Rigueur mathématique</h2>
+            <p>
+                Ce module ne fait pas une régression au sens statistique des moindres carrés. Il fait une interpolation :
+                si les abscisses sont distinctes, il existe un unique polynôme de degré au plus n - 1 qui passe exactement
+                par tous les points. Les coefficients sont calculés avec des rationnels exacts quand les données sont rationnelles.
+            </p>
+            <p>
+                Attention : ajouter beaucoup de points ne rend pas forcément la courbe plus vraie. L'interpolation
+                polynomiale de haut degré peut osciller fortement, notamment près des bords.
+            </p>
+            <a href="documents/polynome.R">Voir le script R original</a>
+        </section>
+
+        <div id="troll-easter-egg" class="troll-easter-egg" aria-hidden="true">
+            <div class="troll-face">:)</div>
+            <p>Erreur 0%. Beaucoup trop parfait pour être honnête.</p>
+        </div>
+    </main>
+
+    <script src="js/regression.js"></script>
+</body>
+</html>

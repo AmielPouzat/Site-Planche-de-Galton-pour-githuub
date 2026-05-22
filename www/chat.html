@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Amiel Pouzat</title>
+    <meta name="description" content="Chat Firebase simple pour pouzat.fr.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier">Atelier</a>
+            <a href="/chat" aria-current="page">Chat</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header">
+            <p class="cv-kicker">Firebase · messages · base pour futurs outils</p>
+            <h1>Chat</h1>
+            <p>
+                Un espace simple pour envoyer des messages. On garde la même base Firebase, mais les nouveaux messages
+                sont structurés pour pouvoir évoluer vers des listes, notes ou outils partagés.
+            </p>
+        </header>
+
+        <section class="chat-layout">
+            <div class="chat-panel">
+                <div id="chat-status" class="chat-status">Connexion...</div>
+                <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+                <form id="chat-form" class="chat-form">
+                    <label>
+                        Nom
+                        <input id="chat-name" type="text" maxlength="40" placeholder="Amiel">
+                    </label>
+                    <label class="chat-form__message">
+                        Message
+                        <textarea id="chat-message" maxlength="1000" placeholder="Écrire un message..." required></textarea>
+                    </label>
+                    <div class="chat-actions">
+                        <button class="cv-button" type="submit">Envoyer</button>
+                        <button id="clear_chat" class="cv-button secondary" type="button">Vider</button>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="tool-note chat-note">
+                <h2>Prochaine extension</h2>
+                <p>
+                    Cette base peut devenir une liste de courses, une liste de tâches, un carnet partagé ou un petit
+                    tableau familial. La première brique, c'est une écriture/lecture Firebase propre.
+                </p>
+            </aside>
+        </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/3.6.10/firebase.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>

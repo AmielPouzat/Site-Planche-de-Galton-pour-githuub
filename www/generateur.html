@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur déterministe - Amiel Pouzat</title>
+    <meta name="description" content="Générateur déterministe inspiré d'un ancien script R, avec export CSV.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier" aria-current="page">Atelier</a>
+            <a href="/chat">Chat</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header">
+            <p class="cv-kicker">Ancien script R · nouvel outil web</p>
+            <h1>Générateur déterministe</h1>
+            <p>
+                Portage JavaScript fidèle du script R original. Tu peux utiliser la fonction brute
+                <code>generateur(m, l, a)</code>, ou le générateur composé <code>generator2(n)</code>
+                qui produit exactement n valeurs normalisées entre 0 et 1.
+            </p>
+        </header>
+
+        <section class="tool-workbench">
+            <form id="generator-form" class="control-panel">
+                <label>
+                    Mode
+                    <select id="generator-kind">
+                        <option value="generator2">generator2(n) - valeurs normalisées</option>
+                        <option value="raw">generateur(m, l, a) - entiers bornés</option>
+                    </select>
+                </label>
+                <label>
+                    Nombre de valeurs
+                    <input id="generator-count" type="number" min="1" max="5000" value="30">
+                </label>
+                <label>
+                    Indexation
+                    <select id="generator-seed-mode">
+                        <option value="time">Dépend du temps actuel</option>
+                        <option value="manual">Index manuel reproductible</option>
+                    </select>
+                </label>
+                <label id="generator-start-field">
+                    Index de départ
+                    <input id="generator-start" type="number" min="0" max="1000000" value="0">
+                </label>
+                <label id="generator-max-field">
+                    Borne entière
+                    <input id="generator-max" type="number" min="2" max="1000000" value="100">
+                </label>
+                <label id="generator-l-field">
+                    Paramètre l
+                    <input id="generator-l" type="number" min="2" max="1000000" value="10">
+                </label>
+                <button class="cv-button" type="submit">Générer</button>
+                <button id="generator-download" class="cv-button secondary" type="button" disabled>CSV</button>
+            </form>
+
+            <div class="result-panel">
+                <div id="generator-stats" class="stat-grid"></div>
+                <textarea id="generator-output" class="output-box" readonly placeholder="Les valeurs apparaîtront ici."></textarea>
+            </div>
+        </section>
+
+        <section class="tool-note">
+            <h2>Note</h2>
+            <p>
+                Ce n'est pas un générateur cryptographique. Le mode `generator2` suit la construction du script R ;
+                le mode `generateur` donne une version pratique qui continue jusqu'à obtenir le nombre de valeurs demandé.
+                L'indexation temporelle décale seulement le point de départ : elle donne une sensation d'aléatoire,
+                tout en gardant une suite déterministe.
+                `var. pop.` divise par n ; `var. corr.` divise par n - 1, comme `var()` dans R.
+            </p>
+            <a href="documents/generator.R">Voir le script R original</a>
+        </section>
+    </main>
+
+    <script src="js/generator.js"></script>
+</body>
+</html>

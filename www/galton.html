@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planche de Galton - Amiel Pouzat</title>
+    <meta name="description" content="Simulation web de planche de Galton pour observer la loi binomiale, les effectifs et la forme en cloche.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier" aria-current="page">Atelier</a>
+            <a href="/chat">Chat</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header">
+            <p class="cv-kicker">Galton · Bernoulli · binomiale ou normale</p>
+            <h1>Planche de Galton</h1>
+            <p>
+                Chaque bille traverse plusieurs choix gauche/droite. La case d'arrivée compte le nombre
+                de choix vers la droite : c'est une observation d'une loi binomiale.
+            </p>
+        </header>
+
+        <section class="tool-workbench galton-workbench">
+            <form id="galton-form" class="control-panel">
+                <label>
+                    Rangées
+                    <input id="galton-rows" type="number" min="1" max="24" value="10">
+                </label>
+                <label>
+                    Probabilité d'aller à droite
+                    <input id="galton-probability" type="number" min="0.01" max="0.99" step="0.01" value="0.5">
+                </label>
+                <label>
+                    Nombre de billes
+                    <input id="galton-balls" type="number" min="1" max="1000" value="160">
+                </label>
+                <label>
+                    Vitesse
+                    <input id="galton-speed" type="range" min="0.5" max="5" step="0.1" value="1.4">
+                </label>
+                <label>
+                    Modèle théorique
+                    <select id="galton-model">
+                        <option value="binomial">Loi binomiale exacte</option>
+                        <option value="normal">Approximation normale</option>
+                    </select>
+                </label>
+                <label class="checkbox-field">
+                    <input id="galton-instant" type="checkbox">
+                    Résultat instantané
+                </label>
+                <button class="cv-button" type="submit">Relancer</button>
+            </form>
+
+            <div class="result-panel galton-panel">
+                <div id="galton-stats" class="stat-grid"></div>
+                <canvas id="galton-canvas" class="galton-canvas" width="980" height="620"></canvas>
+                <div id="galton-counts" class="galton-counts" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <section class="tool-note">
+            <h2>Lecture</h2>
+            <p>
+                Les rangées fixent la loi suivie par une bille. Le nombre de billes ne change pas cette loi :
+                il stabilise seulement les fréquences observées. Les barres rouges montrent les effectifs attendus
+                par le modèle choisi. En mode normal, chaque case correspond à un intervalle avec correction de continuité.
+            </p>
+            <p>
+                Source locale utilisée : <code>Dossier loi normal/com/scripts/generate_galton.py</code>.
+            </p>
+        </section>
+    </main>
+
+    <script src="js/galton.js"></script>
+</body>
+</html>

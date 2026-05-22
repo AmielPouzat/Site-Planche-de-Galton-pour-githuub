@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atelier mathématique - Amiel Pouzat</title>
+    <meta name="description" content="Outils web : générateur déterministe, interpolation polynomiale, planche de Galton et jeu du coffre.">
+    <link rel="icon" type="image/jpg" href="image/amiel.jpg">
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="tool-page atelier-page">
+    <nav class="site-nav" aria-label="Navigation principale">
+        <a class="site-nav__brand" href="/">Amiel Pouzat</a>
+        <div class="site-nav__links">
+            <a href="/">Accueil</a>
+            <a href="/cv">CV</a>
+            <a href="/atelier" aria-current="page">Atelier</a>
+            <a href="/chat">Chat</a>
+            <a href="/3D/">Campus 3D</a>
+        </div>
+    </nav>
+
+    <main class="tool-shell">
+        <header class="tool-header atelier-header">
+            <p class="cv-kicker">quatre outils · quatre manières de jouer avec les nombres</p>
+            <h1>Atelier mathématique</h1>
+            <p>
+                Les vieux scripts R restent disponibles, mais les idées vivent ici sous forme de pages manipulables :
+                un générateur déterministe, une interpolation polynomiale de Lagrange, une planche de Galton
+                et un petit jeu de coffre autour du binaire.
+            </p>
+        </header>
+
+        <section class="atelier-duo" aria-label="Outils mathématiques">
+            <article class="atelier-card">
+                <div>
+                    <p class="tool-card__label">Suite déterministe</p>
+                    <h2>Générateur</h2>
+                    <p>
+                        Une suite reproductible, avec option de départ liée au temps pour donner une sensation
+                        d'aléatoire. Affiche valeurs, moyenne, variance population, variance corrigée et export CSV.
+                    </p>
+                </div>
+                <a class="space-button primary" href="/generateur">Ouvrir le générateur</a>
+            </article>
+
+            <article class="atelier-card">
+                <div>
+                    <p class="tool-card__label">Lagrange</p>
+                    <h2>Interpolation polynomiale</h2>
+                    <p>
+                        Tu entres des couples X/Y, l'outil calcule le polynôme d'interpolation, trace la courbe,
+                        détaille les résidus et rappelle les limites des hauts degrés.
+                    </p>
+                </div>
+                <a class="space-button primary" href="/interpolation">Ouvrir l'interpolation</a>
+            </article>
+
+            <article class="atelier-card">
+                <div>
+                    <p class="tool-card__label">Binomiale</p>
+                    <h2>Planche de Galton</h2>
+                    <p>
+                        Tu règles le nombre de rangées, la probabilité de partir à droite et le nombre de billes.
+                        La simulation affiche les observations et les effectifs attendus par la loi binomiale.
+                    </p>
+                </div>
+                <a class="space-button primary" href="/galton">Ouvrir la planche</a>
+            </article>
+
+            <article class="atelier-card">
+                <div>
+                    <p class="tool-card__label">Binaire</p>
+                    <h2>Jeu du coffre</h2>
+                    <p>
+                        Un coffre choisit un code entre 0 et 7. Tu le retrouves avec trois interrupteurs
+                        rouge, vert et bleu, qui valent 1, 2 et 4. Les niveaux masquent progressivement les indices.
+                    </p>
+                </div>
+                <a class="space-button primary" href="/coffre">Ouvrir le coffre</a>
+            </article>
+        </section>
+
+        <section class="tool-note">
+            <h2>Sources</h2>
+            <p>
+                Les scripts d'origine restent consultables pour garder la filiation visible :
+                <a href="documents/generator.R">generator.R</a> et
+                <a href="documents/polynome.R">polynome.R</a>.
+            </p>
+        </section>
+    </main>
+</body>
+</html>
