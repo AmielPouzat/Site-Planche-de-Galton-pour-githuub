@@ -807,9 +807,9 @@
           <h3 id="formulaTitle">Definitions</h3>
           <div class="formula-grid">
             <p class="formula-item"><strong id="globalFormulaLabel">Global gap</strong><span id="globalFormulaText"></span></p>
-            <p class="formula-item"><strong id="binomialFormulaLabel">Binomial gap</strong><span id="binomialFormulaText"></span></p>
-            <p class="formula-item"><strong id="normalFormulaLabel">Normal gap</strong><span id="normalFormulaText"></span></p>
-            <p class="formula-item"><strong id="theoryFormulaLabel">Theory gap</strong><span id="theoryFormulaText"></span></p>
+            <p class="formula-item"><strong id="binomialFormulaLabel">Gap to binomial expectation</strong><span id="binomialFormulaText"></span></p>
+            <p class="formula-item"><strong id="normalFormulaLabel">Gap to normal approximation</strong><span id="normalFormulaText"></span></p>
+            <p class="formula-item"><strong id="theoryFormulaLabel">Normal approximation gap</strong><span id="theoryFormulaText"></span></p>
           </div>
         </div>
         <div class="export-panel" aria-label="Export">
@@ -2117,7 +2117,7 @@
         normal,
         binomialGap: observed - expected,
         normalGap: observed - normal,
-        theoryGap: expected - normal,
+        theoryGap: normal - expected,
         binomialGapPercent: relativeSignedDifference(observed, expected),
         normalGapPercent: relativeSignedDifference(observed, normal),
         theoryGapPercent: relativeSignedDifference(normal, expected),
