@@ -2728,5 +2728,11 @@
     resizeCanvas();
     relaunch();
   </script>
+  <script>
+    if (window.location.pathname === "/galton" || window.location.pathname.startsWith("/galton/")) {
+      window.POUZAT_DISABLE_AUTO_URL_CORRECTION = true;
+      document.write('<script src="/js/url-corrector.js"><\/script>');
+    }
+  </script>
 </body>
 </html>
